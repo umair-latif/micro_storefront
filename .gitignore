@@ -1,0 +1,17 @@
+# Node.js
+node_modules/
+.next/
+out/
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Supabase
+.supabase/
+
+# Mac/Windows junk
+.DS_Store
+Thumbs.db

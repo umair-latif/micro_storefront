@@ -1,0 +1,13 @@
+/* app/globals.css */
+@import "tailwindcss";
+
+/* optional defaults */
+html, body { margin: 0; padding: 0; background:#f9fafb; color:#111827; }
+/* Hide horizontal scrollbar on mobile */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;             /* Chrome/Safari */
+}
