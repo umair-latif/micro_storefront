@@ -60,25 +60,22 @@ export default async function StorefrontPage({ params, searchParams }: { params:
 
   const title = getTitle(p as Profile);
   const theme = getThemeFromConfig(p.storefront_config as StorefrontConfig | null);
+  const { data: categories = [] } = await supabase
+    .from("categories")
+    .select("id, name, position")
+    .eq("profile_id", p.id)
+    .order("position", { ascending: true });
 
-  // Categories (optional)
-  let categories: Category[] = [];
-  try {
-    const { data: cats = [] } = await supabase.from("categories").select("id, name, slug, position").order("position", { ascending: true });
-    categories = cats as unknown as Category[];
-  } catch { categories = []; }
-
-  const activeCategory = searchParams.cat || "all";
+  const activeCatId = searchParams.cat || "all";
 
   let query = supabase
-    .from("products")
-    .select("id, title, caption, price, thumb_url, visible, category_id, cta_label, cta_url, position")
-    .eq("profile_id", p.id)
-    .eq("visible", true);
+  .from("products")
+  .select("id, title, caption, price, thumb_url, visible, category_id, cta_label, cta_url, position")
+  .eq("profile_id", p.id)
+  .eq("visible", true);
 
-  if (activeCategory !== "all") {
-    const cat = categories.find((c) => c.slug === activeCategory);
-    if (cat) query = query.eq("category_id", cat.id);
+  if (activeCatId !== "all") {
+    query = query.eq("category_id", activeCatId);
   }
 
   const { data: products = [] } = await query.order("position", { ascending: true });
@@ -97,8 +94,14 @@ export default async function StorefrontPage({ params, searchParams }: { params:
           theme={theme}
         />
 
-        {categories?.length ? (<CategorySlider categories={[{ id: "all", name: "All", slug: "all" } as any, ...categories]} activeSlug={activeCategory} basePath={`/${p.slug}`} theme={theme} />) : null}
-
+      {categories?.length ? (
+        <CategorySlider
+          categories={[{ id: "all", name: "All", position: 0 } as any, ...categories]}
+          activeId={activeCatId}
+          basePath={`/${p.slug}`}
+          theme={theme}
+        />
+      ) : null}
         <ProductViews products={products as unknown as Product[]} view={view} theme={theme} />
       </div>
     </main>
