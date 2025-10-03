@@ -1,90 +1,106 @@
-import { getStorefront } from '@/lib/db';
-import StorefrontClient from './storefront-client';
+import type { Metadata, ResolvingMetadata } from "next";
+import StorefrontHeader from "@/components/storefront/StorefrontHeader";
+import CategorySlider from "@/components/storefront/CategorySlider";
+import ProductViews from "@/components/storefront/ProductViews";
+import { getThemeFromConfig } from "@/lib/theme";
+import { type StorefrontConfig, type Product, type Category, type SocialsConfig } from "@/lib/types";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
-export default async function Storefront({ params }:{ params:{ slug:string } }) {
-  const data = await getStorefront(params.slug);
-  if (!data) return <div className="p-6">Store not found.</div>;
+type Profile = {
+  id: string;
+  slug: string;
+  display_name: string;
+  bio: string | null;
+  profile_img: string | null;
+  header_img: string | null;
+  wa_e164: string | null;
+  socials_config: unknown | null;
+  storefront_config: unknown | null;
+};
 
-  const { profile, categories, products } = data;
+function getTitle(p: Profile) { return p.display_name || "Profile"; }
 
-  // Build category objects with a cover (first product image in that category)
-  const byCat = new Map<string, any[]>();
-  for (const p of products) {
-    const key = p.category_id || 'uncategorized';
-    if (!byCat.has(key)) byCat.set(key, []);
-    byCat.get(key)!.push(p);
+export async function generateMetadata({ params }: { params: { slug: string } }, _parent: ResolvingMetadata): Promise<Metadata> {
+  const supabase = createSupabaseServerClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, slug, display_name, bio, profile_img, header_img, storefront_config, is_public")
+    .eq("slug", params.slug)
+    .is("is_public", true)
+    .maybeSingle();
+
+  const title = profile ? getTitle(profile as Profile) : "Storefront";
+  const description = (profile as any)?.bio ?? "Discover products and links";
+  const cover = (profile as any)?.header_img ?? "/og-default.jpg";
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, images: [{ url: cover }], type: "website" },
+    twitter: { card: "summary_large_image", title, description, images: [cover] },
+  };
+}
+
+export default async function StorefrontPage({ params, searchParams }: { params: { slug: string }, searchParams: { view?: "grid" | "list" | "links", cat?: string } }) {
+  const supabase = createSupabaseServerClient();
+
+  const { data: p } = await supabase
+    .from("profiles")
+    .select("id, slug, display_name, bio, profile_img, header_img, wa_e164, socials_config, storefront_config, is_public")
+    .eq("slug", params.slug)
+    .is("is_public", true)
+    .maybeSingle();
+
+  if (!p) {
+    return (<main className="mx-auto max-w-2xl p-6 text-center">
+      <h1 className="text-2xl font-semibold">Storefront not found</h1>
+      <p className="mt-2 text-muted-foreground">Check the URL or contact the owner.</p>
+    </main>);
   }
 
-  const catList = categories.map((c:any) => {
-    const prods = byCat.get(c.id) || [];
-    const cover = prods.find(p => p.thumb_url)?.thumb_url || null;
-    return { id: c.id, name: c.name, cover };
-  });
+  const title = getTitle(p as Profile);
+  const theme = getThemeFromConfig(p.storefront_config as StorefrontConfig | null);
 
-  // Prepend "All" pseudo-category
-  const allCat = { id: 'all', name: 'Show all', cover: products.find(p=>p.thumb_url)?.thumb_url || null };
-  const cats = [allCat, ...catList];
+  // Categories (optional)
+  let categories: Category[] = [];
+  try {
+    const { data: cats = [] } = await supabase.from("categories").select("id, name, slug, position").order("position", { ascending: true });
+    categories = cats as unknown as Category[];
+  } catch { categories = []; }
+
+  const activeCategory = searchParams.cat || "all";
+
+  let query = supabase
+    .from("products")
+    .select("id, title, caption, price, thumb_url, visible, category_id, cta_label, cta_url, position")
+    .eq("profile_id", p.id)
+    .eq("visible", true);
+
+  if (activeCategory !== "all") {
+    const cat = categories.find((c) => c.slug === activeCategory);
+    if (cat) query = query.eq("category_id", cat.id);
+  }
+
+  const { data: products = [] } = await query.order("position", { ascending: true });
+  const view = searchParams.view ?? ((p.storefront_config as StorefrontConfig | null)?.default_view || "grid");
 
   return (
-    <main className="max-w-xl mx-auto">
-      {/* Header (non-sticky) with optional header image background }
-        <section className="relative">
-    {profile.header_img && (
-      <div className="absolute inset-0 z-0">
-        {/* eslint-disable-next-line @next/next/no-img-element }
-        <img
-          src={profile.header_img}
-          alt=""
-          className="w-full h-40 md:h-48 object-cover"
+    <main className={theme.wrapper} style={{ background: theme.background }}>
+      <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
+        <StorefrontHeader
+          coverUrl={p.header_img}
+          avatarUrl={p.profile_img}
+          title={title}
+          bio={p.bio}
+          socials={p.socials_config as SocialsConfig | null}
+          whatsappNumber={p.wa_e164 ?? undefined}
+          theme={theme}
         />
-        <div className="absolute inset-0 bg-black/15" />
+
+        {categories?.length ? (<CategorySlider categories={[{ id: "all", name: "All", slug: "all" } as any, ...categories]} activeSlug={activeCategory} basePath={`/${p.slug}`} theme={theme} />) : null}
+
+        <ProductViews products={products as unknown as Product[]} view={view} theme={theme} />
       </div>
-    )}
-
-    {/* Foreground content }
-    <div className="relative z-10 px-4 py-4">
-      <div className="flex items-center gap-3">
-        {profile.profile_img ? (
-          <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-200 shrink-0 ring-2 ring-white">
-            {/* eslint-disable-next-line @next/next/no-img-element }
-            <img src={profile.profile_img} alt="Profile" className="w-14 h-14 object-cover" />
-          </div>
-        ) : null}
-
-        <div className={`min-w-0 flex-1 ${profile.profile_img ? '' : 'text-center mx-auto'}`}>
-          <h1 className="font-semibold text-base">{profile.display_name}</h1>
-          {profile.bio && (
-            <p className={`text-gray-700 text-sm whitespace-pre-line leading-snug ${profile.profile_img ? '' : 'max-w-[28rem] mx-auto'}`}>
-              {profile.bio}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className={`flex gap-2 mt-3 ${profile.profile_img ? '' : 'justify-center'}`}>
-        {profile.ig_handle && (
-          <a
-            href={`https://instagram.com/${profile.ig_handle}`}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-sm font-medium"
-          >
-            IG
-          </a>
-        )}
-        {profile.tt_handle && (
-          <a
-            href={`https://tiktok.com/@${profile.tt_handle}`}
-            className="bg-black text-white px-3 py-1.5 rounded-full text-sm font-medium"
-          >
-            TT
-          </a>
-        )}
-      </div>
-    </div>
-  </section>
-
-
-      {/* Hand off to client-side component */}
-      <StorefrontClient profile={profile} categories={cats} products={products} />
     </main>
   );
 }
