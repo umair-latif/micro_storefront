@@ -12,7 +12,7 @@ export default function StorefrontSettingsForm({
 }) {
   const [pending, start] = useTransition();
 
-  const variant = current?.theme?.variant ?? "clean";a
+  const variant = current?.theme?.variant ?? "clean";
   const preset = current?.theme?.palette?.preset ?? "default";
   const primary = current?.theme?.palette?.primary ?? "";
   const accent  = current?.theme?.palette?.accent ?? "";
@@ -20,21 +20,23 @@ export default function StorefrontSettingsForm({
   const view    = current?.display_mode ?? "grid";
 
   function onSubmit(form: FormData) {
-    const input = {
-      profileId,
-      variant: form.get("variant") as any,
-      preset: form.get("preset") as string,
-      primary: form.get("primary") as string,
-      accent: form.get("accent") as string,
-      landing: form.get("landing") as any,
-      view: form.get("view") as any,
-    };
-    start(async () => {
-      await saveStorefrontConfig(input);
-      // optional toast
-      alert("Saved!");
-    });
-  }
+    // ⚠️ UPDATED: The input object now includes ALL form fields
+    const input = {
+      profileId,
+      variant: form.get("variant") as any,
+      preset: form.get("preset") as string,
+      primary: form.get("primary") as string,
+      accent: form.get("accent") as string,
+      landing: form.get("landing") as any,
+      view: form.get("view") as any,
+    };
+    
+    start(async () => {
+      await saveStorefrontConfig(input);
+      // optional toast
+      alert("Saved!");
+    });
+  }
 
   return (
     <form
