@@ -1,39 +1,47 @@
 'use client';
-import { useState } from 'react';
-import { supabaseClient } from '@/lib/supabase-client';
-import { useRouter } from 'next/navigation';
-
+import { useState, useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/lib/supabase-client';
+import { serverPasswordSignIn } from './actions';
 
 export default function LoginPage() {
   const router = useRouter();
+  const search = useSearchParams();
+  const next = (search.get('next') || '/admin') as string;
+
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [err, setErr] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [pending, start] = useTransition();
 
   async function onLogin(e: React.FormEvent) {
     e.preventDefault();
     setErr('');
-    setLoading(true);
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pw });
-    setLoading(false);
-    if (error) return setErr(error.message);
-    router.replace('/admin');
-  }
+    start(async () => {
+      const supabase = createClient();
 
+      // 1) Browser sign-in (gives JWT in localStorage so uploads are authenticated)
+      const { error: e1 } = await supabase.auth.signInWithPassword({ email, password: pw });
+      if (e1) return setErr(e1.message);
+
+      // 2) Server sign-in (sets httpOnly cookies for SSR/middleware)
+      const res = await serverPasswordSignIn(email, pw);
+      if (!res.ok) return setErr(res.error);
+
+      router.replace(next);
+    });
+  }
   async function onSignup(e: React.FormEvent) {
     e.preventDefault();
     setErr('');
-    setLoading(true);
-    const { error } = await supabaseClient.auth.signUp({ email, password: pw });
-    setLoading(false);
-    if (error) return setErr(error.message);
-    router.replace('/admin');
+    start(async () => {
+      const res = await serverPasswordSignIn(email, pw);
+      if (res && !res.ok) setErr(res.error);
+    });
   }
 
   return (
     <>
-      {/* BRAND BAR */}
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b">
         <div className="mx-auto w-full max-w-5xl px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
@@ -63,12 +71,12 @@ export default function LoginPage() {
             autoComplete="current-password"
           />
           {err && <div className="text-sm text-red-600">{err}</div>}
-          <button disabled={loading} className="w-full bg-gray-900 text-white rounded py-2">
-            {loading ? 'Loading…' : 'Log in'}
+          <button disabled={pending} className="w-full bg-gray-900 text-white rounded py-2">
+            {pending ? 'Loading…' : 'Log in'}
           </button>
           <button
             type="button"
-            disabled={loading}
+            disabled={pending}
             onClick={onSignup}
             className="w-full border rounded py-2"
           >
