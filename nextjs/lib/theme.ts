@@ -16,7 +16,7 @@ export type ResolvedTheme = {
   chip: string;
 };
 
-function clampHex(color?: string | null, fallback: string): string {
+function clampHex(fallback: string, color?: string | null): string {
   const c = (color ?? "").trim();
   return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c) ? c : fallback;
 }
@@ -71,8 +71,8 @@ export function getThemeFromConfig(cfg: StorefrontConfig): ResolvedTheme {
   if (variant === "bold") {
     if (BOLD_PRESETS[preset]) {
       const bp = BOLD_PRESETS[preset];
-      const primary = clampHex(bp.primary, "#111111");
-      const accent  = clampHex(bp.accent, "#111111");
+      const primary = clampHex( "#111111", bp.primary,);
+      const accent  = clampHex( "#111111", bp.accent);
       const background = bp.background ?? "#ffffff";
       const surface    = bp.surface    ?? "#ffffff";
       const text       = bp.text       ?? "#111111";
@@ -80,8 +80,8 @@ export function getThemeFromConfig(cfg: StorefrontConfig): ResolvedTheme {
       return finalizeTokens({ background, surface, text, muted, accent }, { variant: "bold", primary });
     }
     // custom colors
-    const primary = clampHex(theme?.palette?.primary, "#111111");
-    const accent  = clampHex(theme?.palette?.accent,  "#6b7280");
+    const primary = clampHex( "#111111", theme?.palette?.primary);
+    const accent  = clampHex( "#6b7280", theme?.palette?.accent);
     return finalizeTokens(
       { background:"#ffffff", surface:"#ffffff", text:"#111111", muted:"#6b7280", accent: primary || "#111111" },
       { variant: "bold", primary } // expose primary even for custom

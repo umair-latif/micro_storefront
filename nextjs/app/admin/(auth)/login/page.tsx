@@ -38,7 +38,7 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-5xl px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-7 h-7 rounded bg-gray-900" aria-hidden />
-            <div className="text-sm text-gray-700">Instore Admin</div>
+            <div className="text-sm text-gray-700">Admin</div>
           </div>
         </div>
       </div>

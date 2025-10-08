@@ -41,12 +41,12 @@ export default function BrandBar() {
         <div className="mx-2 h-6 w-px bg-black/10" />
 
         {/* Keep overflow visible so popovers (store switcher) can float */}
-        <div className="relative flex flex-1 items-center gap-2 overflow-x-visible">
+        <div className="relative flex flex-1 items-center gap-2 overflow-x-visible z-50">
           <StoreSwitcher />
 
           <Link
             href={`/admin/profile${store ? `?store=${store}` : ""}`}
-            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-neutral-800"
+            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-3 py-2 font-sm text-white shadow-sm hover:bg-neutral-800"
           >
             <Plus className="h-4 w-4" /> New Store
           </Link>

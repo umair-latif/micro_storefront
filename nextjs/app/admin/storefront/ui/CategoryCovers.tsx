@@ -93,16 +93,19 @@ export default function CategoryCovers({ profileId }: { profileId: string }) {
           </div>
           <div className="mt-2 flex gap-2">
             <input
-              ref={(el) => (fileRefs.current[cat.id] = el)}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.currentTarget.files?.[0];
-                if (f) uploadCover(cat, f);
-                e.currentTarget.value = "";
-              }}
-            />
+                ref={(el) => {
+                    // el can be HTMLInputElement | null
+                    fileRefs.current[cat.id] = el;
+                }}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                    const f = e.currentTarget.files?.[0];
+                    if (f) uploadCover(cat, f);
+                    e.currentTarget.value = "";
+                }}
+                />
             <button
               onClick={() => fileRefs.current[cat.id]?.click()}
               disabled={busyId === cat.id}
