@@ -4,6 +4,10 @@ export const DEFAULT_STOREFRONT_CONFIG: StorefrontConfig = {
   display_mode: "grid",
   show_categories: true,
   sort: "newest",
-  cta_visibility: { instagram: true, whatsapp: true },
-  theme: "classic",
+  landing_page: "products",
+  cta_visibility: { instagram: true, whatsapp: true, custom1: true, custom2: false },
+  theme: {
+    variant: "clean",
+    palette: { preset: "default", primary: null, accent: null },
+  },
 };

@@ -2,20 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase-client";
-import { Loader2, Plus, Trash, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2, Plus } from "lucide-react";
+import CategoryForm, { type CategoryRow } from "./CategoryForm";
 
 type Category = {
   id: string;
   name: string;
+  cover_img: string | null;
+  position: number | null;
 };
 
 export default function CategoriesManager({ profileId }: { profileId: string }) {
   const supabase = createClient();
   const [items, setItems] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [reloading, setReloading] = useState(false); // small spinner when refreshing after create
 
   async function load() {
     setLoading(true);
@@ -23,8 +26,9 @@ export default function CategoriesManager({ profileId }: { profileId: string }) 
 
     const { data, error } = await supabase
       .from("categories")
-      .select("id, name")
-      .eq("profile_id", profileId);
+      .select("id, name, cover_img, position")
+      .eq("profile_id", profileId)
+      .order("position", { ascending: true });
 
     if (error) {
       console.error("Load categories error:", error);
@@ -47,53 +51,6 @@ export default function CategoriesManager({ profileId }: { profileId: string }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId]);
 
-  async function create() {
-    const name = newName.trim();
-    if (!name) return;
-
-    setCreating(true);
-    setErrorMsg(null);
-
-    const { error } = await supabase.from("categories").insert({
-      profile_id: profileId,
-      name,
-    });
-
-    if (error) {
-      console.error("Create category error:", error);
-      setErrorMsg(error.message ?? "Failed to create category.");
-    } else {
-      setNewName("");
-      await load();
-    }
-    setCreating(false);
-  }
-
-  async function remove(id: string) {
-    setErrorMsg(null);
-    const { error } = await supabase.from("categories").delete().eq("id", id);
-    if (error) {
-      console.error("Delete category error:", error);
-      setErrorMsg(error.message ?? "Failed to delete category.");
-    } else {
-      setItems((prev) => prev.filter((c) => c.id !== id));
-    }
-  }
-
-  async function rename(id: string, value: string) {
-    const name = value.trim();
-    if (!name) return;
-
-    setErrorMsg(null);
-    const { error } = await supabase.from("categories").update({ name }).eq("id", id);
-    if (error) {
-      console.error("Rename category error:", error);
-      setErrorMsg(error.message ?? "Failed to rename category.");
-    } else {
-      setItems((prev) => prev.map((c) => (c.id === id ? { ...c, name } : c)));
-    }
-  }
-
   return (
     <div className="space-y-4 rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
       {errorMsg && (
@@ -103,53 +60,61 @@ export default function CategoriesManager({ profileId }: { profileId: string }) 
         </div>
       )}
 
-      <div className="flex gap-2">
-        <input
-          placeholder="New category name"
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          className="flex-1 rounded-lg border border-black/10 px-3 py-2 text-sm"
-        />
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-neutral-600">Manage your categories</div>
         <button
-          onClick={create}
-          disabled={creating}
-          className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
+          onClick={() => setShowCreate((s) => !s)}
+          className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm hover:bg-neutral-50"
         >
-          {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-          Add
+          <Plus className="h-4 w-4" />
+          New category
         </button>
       </div>
 
+      {showCreate && (
+        <CategoryForm
+          mode="create"
+          profileId={profileId}
+          onCreated={(c) => {
+            // add to top optimistically
+            setItems((prev) => [{ ...(c as Category) }, ...prev]);
+            setShowCreate(false);
+          }}
+          onCancel={() => setShowCreate(false)}
+        />
+      )}
+
       {loading ? (
-        <div className="text-sm text-neutral-600">Loading…</div>
+        <div className="flex items-center gap-2 text-sm text-neutral-600">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+        </div>
       ) : items.length === 0 ? (
         <div className="text-sm text-neutral-600">No categories yet.</div>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((c) => (
-            <li
-              key={c.id}
-              className="flex items-center justify-between rounded-xl border border-black/10 bg-white p-3"
-            >
-              <input
-                defaultValue={c.name}
-                onBlur={(e) => {
-                  const v = e.currentTarget.value;
-                  if (v && v !== c.name) rename(c.id, v);
+            <li key={c.id}>
+              <CategoryForm
+                mode="edit"
+                profileId={profileId}
+                category={c}
+                onUpdated={(next) => {
+                  setItems((prev) => prev.map((x) => (x.id === next.id ? (next as any) : x)));
                 }}
-                className="w-full rounded-md border border-transparent px-2 py-1 text-sm hover:border-black/10 focus:border-black/20"
+                onDeleted={(id) => {
+                  setItems((prev) => prev.filter((x) => x.id !== id));
+                }}
               />
-              <button
-                onClick={() => remove(c.id)}
-                className="ml-2 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-black/10 hover:bg-neutral-50"
-                title="Delete"
-              >
-                <Trash className="h-4 w-4" />
-              </button>
             </li>
           ))}
         </ul>
       )}
+
+      {reloading ? (
+        <div className="flex items-center gap-2 pt-1 text-xs text-neutral-500">
+          <Loader2 className="h-3 w-3 animate-spin" /> Refreshing…
+        </div>
+      ) : null}
     </div>
   );
 }

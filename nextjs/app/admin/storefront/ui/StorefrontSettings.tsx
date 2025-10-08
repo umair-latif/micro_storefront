@@ -6,6 +6,14 @@ import type { StorefrontConfig, StorefrontDisplayMode } from "@/lib/types";
 import { DEFAULT_STOREFRONT_CONFIG } from "@/lib/defaults";
 import { createClient } from "@/lib/supabase-client";
 import { CheckCircle2, Loader2 } from "lucide-react";
+const CLEAN_PRESETS = ["default", "warm", "cool"];
+const MINIMAL_PRESETS = ["light", "dark"];
+const BOLD_PRESETS = ["sunset", "ocean", "forest", "custom"]; // "custom" unlocks color inputs
+
+function readable(label: string) {
+  return label.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 
 function Section({ title, children, description }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -52,11 +60,102 @@ export default function StorefrontSettings({
     const next = { ...config, [key]: value } as StorefrontConfig;
     void save(next);
   }
+  function setTheme(next: Partial<NonNullable<StorefrontConfig["theme"]>>) {
+  const merged: StorefrontConfig = {
+    ...config,
+    theme: {
+      variant: next.variant ?? config.theme?.variant ?? "clean",
+      palette: {
+        preset: next.palette?.preset ?? config.theme?.palette?.preset ?? "default",
+        primary: next.palette?.primary ?? config.theme?.palette?.primary ?? null,
+        accent: next.palette?.accent ?? config.theme?.palette?.accent ?? null,
+      },
+    },
+  };
+  void save(merged);
+}
+
+function presetOptionsFor(variant: string) {
+  if (variant === "minimal") return MINIMAL_PRESETS;
+  if (variant === "bold") return BOLD_PRESETS;
+  return CLEAN_PRESETS; // clean
+}
+
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {/* Controls */}
       <div className="space-y-4">
+        <Section title="Theme" description="Pick a theme and color palette for your storefront">
+          {/* Variant selector */}
+          <div className="mb-3 grid grid-cols-3 gap-2">
+            {(["clean", "bold", "minimal"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setTheme({ variant: v, palette: { preset: "default", primary: null, accent: null } })}
+                className={`rounded-xl border px-3 py-2 text-sm capitalize ${
+                  (config.theme?.variant ?? "clean") === v
+                    ? "border-neutral-900 bg-neutral-900 text-white"
+                    : "border-black/10 bg-white hover:bg-neutral-50"
+                }`}
+              >
+                {readable(v)}
+              </button>
+            ))}
+          </div>
+
+          {/* Palette preset */}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-medium">Palette</span>
+              <select
+                className="mt-1 w-full rounded-xl border border-black/10 bg-white p-2 text-sm"
+                value={config.theme?.palette?.preset ?? "default"}
+                onChange={(e) =>
+                  setTheme({ palette: { preset: e.target.value || "default" } })
+                }
+              >
+                {presetOptionsFor(config.theme?.variant ?? "clean").map((p) => (
+                  <option key={p} value={p}>{readable(p)}</option>
+                ))}
+              </select>
+            </label>
+
+            {/* Only show overrides for Bold; show when preset === "custom" or always allow override */}
+            {(config.theme?.variant === "bold") && (
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="text-sm font-medium">Primary (hex)</span>
+                  <input
+                    className="mt-1 w-full rounded-xl border border-black/10 px-3 py-2 text-sm"
+                    placeholder="#ff6b6b"
+                    value={config.theme?.palette?.primary ?? ""}
+                    onChange={(e) =>
+                      setTheme({ palette: { primary: e.target.value || null } })
+                    }
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium">Accent (hex)</span>
+                  <input
+                    className="mt-1 w-full rounded-xl border border-black/10 px-3 py-2 text-sm"
+                    placeholder="#feca57"
+                    value={config.theme?.palette?.accent ?? ""}
+                    onChange={(e) =>
+                      setTheme({ palette: { accent: e.target.value || null } })
+                    }
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+
+          <p className="mt-2 text-xs text-neutral-600">
+            <b>Clean</b> = neutral, Instagram-like. <b>Minimal</b> = light/dark presets. <b>Bold</b> = strong colors; use preset or set custom
+            <span className="whitespace-nowrap"> primary/accent</span>.
+          </p>
+        </Section>
+
         <Section title="View Mode" description="Choose how products render on your public page">
           <div className="grid grid-cols-3 gap-2">
             {(["grid", "links", "list"] as StorefrontDisplayMode[]).map((mode) => (
@@ -71,6 +170,37 @@ export default function StorefrontSettings({
               </button>
             ))}
           </div>
+        </Section>
+        <Section
+          title="Landing Page"
+          description="Choose what visitors see first on your storefront"
+        >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            {([
+              { value: "products", label: "Products" },
+              { value: "categories", label: "Categories" },
+              { value: "hero-only", label: "Business Card" },
+            ] as const).map((opt) => {
+              const current = (config.landing_page ?? "products") as "products" | "categories" | "hero-only";
+              return (
+                <label key={opt.value} className="inline-flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="landing_page"
+                    value={opt.value}
+                    checked={current === opt.value}
+                    onChange={() => onChange("landing_page", opt.value)}
+                  />
+                  <span>{opt.label}</span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-neutral-600">
+            <strong>Products:</strong> hero + products.{" "}
+            <strong>Categories:</strong> hero + category directory.{" "}
+            <strong>Business Card:</strong> full-screen hero with avatar, socials & CTAs.
+          </p>
         </Section>
 
         <Section title="Categories" description="Show categories as scrollable chips below the header">

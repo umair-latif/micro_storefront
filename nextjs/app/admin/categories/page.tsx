@@ -29,5 +29,6 @@ export default async function CategoriesPage({
       </div>
       <CategoriesManager profileId={profile.id} />
     </div>
+    
   );
 }

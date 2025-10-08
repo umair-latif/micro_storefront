@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase-client";
 import { Loader2, Plus, Pencil, Trash, AlertTriangle } from "lucide-react";
 import ProductEditorModal from "./ProductEditorModal";
+import { removeObjectByUrl } from "@/lib/storage-cleanup";
 
 type Product = {
   id: string;
@@ -77,16 +78,38 @@ export default function ProductsManager({ profileId }: { profileId: string }) {
     setEditing(data as Product);
   }
 
-  async function remove(id: string) {
-    setErrorMsg(null);
-    const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) {
-      console.error("Delete product error:", error);
-      setErrorMsg(error.message ?? "Failed to delete product.");
-    } else {
-      setItems((prev) => prev.filter((p) => p.id !== id));
+async function remove(id: string) {
+  setErrorMsg(null);
+
+  try {
+    // 1️⃣ Fetch the product first (to get the thumb_url)
+    const { data: prod, error: fetchErr } = await supabase
+      .from("products")
+      .select("thumb_url")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchErr) {
+      console.warn("Fetch before delete failed:", fetchErr);
     }
+
+    // 2️⃣ Try to remove the image from storage (if it exists)
+    if (prod?.thumb_url) {
+      await removeObjectByUrl(prod.thumb_url);
+    }
+
+    // 3️⃣ Delete the product record
+    const { error: deleteErr } = await supabase.from("products").delete().eq("id", id);
+    if (deleteErr) throw deleteErr;
+
+    // 4️⃣ Update local UI state
+    setItems((prev) => prev.filter((p) => p.id !== id));
+  } catch (err: any) {
+    console.error("Delete product error:", err);
+    setErrorMsg(err?.message ?? "Failed to delete product.");
   }
+}
+
 
   async function toggleVisible(p: Product) {
     const next = !(p.visible ?? true);
