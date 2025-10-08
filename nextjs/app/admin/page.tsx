@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+export const dynamic = 'force-dynamic'; // Force dynamic rendering
+
 
 export default function AdminIndex({
   searchParams,

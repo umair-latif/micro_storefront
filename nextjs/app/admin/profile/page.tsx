@@ -1,101 +1,107 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase-client";
+import { useSearchParams } from "next/navigation"; // Client Component hook
+import { createClient } from "@/lib/supabase-client"; // Client-side Supabase client
 import { CheckCircle2, Loader2, Upload, Trash2 } from "lucide-react";
 
+// ❌ REMOVE: export const dynamic = 'force-dynamic'; 
+// This is only for Server Components and is not needed here.
+
 type SocialsConfig = {
-  instagram?: string | null;
-  tiktok?: string | null;
-  x?: string | null;           // twitter / X
-  facebook?: string | null;
-  etsy?: string | null;
-  amazon?: string | null;
-  youtube?: string | null;
+  instagram?: string | null;
+  tiktok?: string | null;
+  x?: string | null;           // twitter / X
+  facebook?: string | null;
+  etsy?: string | null;
+  amazon?: string | null;
+  youtube?: string | null;
 };
 
 type Profile = {
-  id: string;
-  slug: string;
-  display_name: string | null;
-  bio: string | null;
-  ig_handle: string | null;       // legacy
-  tt_handle: string | null;       // legacy
-  wa_e164: string | null;
-  profile_img: string | null;
-  header_img: string | null;
-  socials_config: SocialsConfig | null;
+  id: string;
+  slug: string;
+  display_name: string | null;
+  bio: string | null;
+  ig_handle: string | null;       // legacy
+  tt_handle: string | null;       // legacy
+  wa_e164: string | null;
+  profile_img: string | null;
+  header_img: string | null;
+  socials_config: SocialsConfig | null;
 };
 
+// 1. ❌ REMOVE 'async' keyword
 export default function ProfilePage() {
-  const supabase = createClient();
-  const search = useSearchParams();
-  const store = (search.get("store") ?? "").trim() || null;
+    // 2. ✅ Instantiate client inside the function body
+    const supabase = createClient();
+    const search = useSearchParams();
+    const store = (search.get("store") ?? "").trim() || null;
 
-  const [loading, setLoading] = useState(true);
-  const [saving, startSaving] = useTransition();
-  const [saved, setSaved] = useState(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, startSaving] = useTransition();
+    const [saved, setSaved] = useState(false);
+    const [profile, setProfile] = useState<Profile | null>(null);
+    const [err, setErr] = useState<string | null>(null);
 
-  // file inputs for avatar & cover
-  const avatarInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [uploadingCover, setUploadingCover] = useState(false);
-  const [deletingAvatar, setDeletingAvatar] = useState(false);
-  const [deletingCover, setDeletingCover] = useState(false);
+    // file inputs for avatar & cover
+    const avatarInputRef = useRef<HTMLInputElement>(null);
+    const coverInputRef = useRef<HTMLInputElement>(null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [uploadingCover, setUploadingCover] = useState(false);
+    const [deletingAvatar, setDeletingAvatar] = useState(false);
+    const [deletingCover, setDeletingCover] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (!store) {
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, slug, display_name, bio, ig_handle, tt_handle, wa_e164, profile_img, header_img, socials_config")
-        .or(`id.eq.${store},slug.eq.${store}`)
-        .maybeSingle();
+    // ✅ Data fetching remains correctly inside useEffect
+    useEffect(() => {
+      let mounted = true;
+      (async () => {
+        if (!store) {
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, slug, display_name, bio, ig_handle, tt_handle, wa_e164, profile_img, header_img, socials_config")
+          .or(`id.eq.${store},slug.eq.${store}`)
+          .maybeSingle();
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      if (error) {
-        console.error("profiles fetch error:", error);
-        setErr(error.message ?? "Failed to load profile.");
-        setProfile(null);
-      } else {
-        // ensure socials_config exists
-        const sc: SocialsConfig = {
-          instagram: data?.socials_config?.instagram ?? (data?.ig_handle ? `https://instagram.com/${data.ig_handle.replace(/^@/, "")}` : null),
-          tiktok: data?.socials_config?.tiktok ?? (data?.tt_handle ? `https://tiktok.com/@${data.tt_handle.replace(/^@/, "")}` : null),
-          x: data?.socials_config?.x ?? null,
-          facebook: data?.socials_config?.facebook ?? null,
-          etsy: data?.socials_config?.etsy ?? null,
-          amazon: data?.socials_config?.amazon ?? null,
-          youtube: data?.socials_config?.youtube ?? null,
-        };
-        setProfile({ ...(data as Profile), socials_config: sc });
-        setErr(null);
-      }
-      setLoading(false);
-    })();
-    return () => { mounted = false; };
-  }, [store, supabase]);
+        if (error) {
+          console.error("profiles fetch error:", error);
+          setErr(error.message ?? "Failed to load profile.");
+          setProfile(null);
+        } else {
+          // ensure socials_config exists
+          const sc: SocialsConfig = {
+            instagram: data?.socials_config?.instagram ?? (data?.ig_handle ? `https://instagram.com/${data.ig_handle.replace(/^@/, "")}` : null),
+            tiktok: data?.socials_config?.tiktok ?? (data?.tt_handle ? `https://tiktok.com/@${data.tt_handle.replace(/^@/, "")}` : null),
+            x: data?.socials_config?.x ?? null,
+            facebook: data?.socials_config?.facebook ?? null,
+            etsy: data?.socials_config?.etsy ?? null,
+            amazon: data?.socials_config?.amazon ?? null,
+            youtube: data?.socials_config?.youtube ?? null,
+          };
+          setProfile({ ...(data as Profile), socials_config: sc });
+          setErr(null);
+        }
+        setLoading(false);
+      })();
+      return () => { mounted = false; };
+    }, [store, supabase]);
+    
+   const title = useMemo(
+      () => (profile?.display_name || profile?.slug ? `/${profile?.slug}` : ""),
+      [profile]
+    );
 
-  const title = useMemo(
-    () => (profile?.display_name || profile?.slug ? `/${profile?.slug}` : ""),
-    [profile]
-  );
-
-  function update<K extends keyof Profile>(key: K, value: Profile[K]) {
-    if (!profile) return;
-    setProfile({ ...profile, [key]: value });
-  }
+    function update<K extends keyof Profile>(key: K, value: Profile[K]) {
+      if (!profile) return;
+      setProfile({ ...profile, [key]: value });
+    }
 
   function updateSocial(key: keyof SocialsConfig, value: string) {
     if (!profile) return;

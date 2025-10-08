@@ -1,4 +1,5 @@
 // app/admin/layout.tsx
+export const dynamic = 'force-dynamic'; 
 import type { ReactNode } from "react";
 import BrandBar from "./components/BrandBar";
 import Sidebar from "./components/SideBar";
