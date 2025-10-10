@@ -2,7 +2,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
-import { serverPasswordSignIn } from './actions';
+import { serverPasswordSignIn, serverPasswordSignUp } from './actions';
 import { User } from "lucide-react";
 
 
