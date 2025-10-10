@@ -25,13 +25,26 @@ export default function StoreSwitcher() {
 
   const currentStore = search.get("store");
 
-  // Load all stores for logged-in user
+  // Load stores owned by current user
   async function loadStores() {
     setLoading(true);
     setErrorMsg(null);
+
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userErr) {
+      console.error("getUser error:", userErr);
+    }
+    const user = userData?.user;
+    if (!user) {
+      setProfiles([]);
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, slug, display_name, owner_uid")
+      .select("id, slug, display_name")
+      .eq("owner_uid", user.id) // ✅ only this user’s stores
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -39,7 +52,7 @@ export default function StoreSwitcher() {
       setErrorMsg("Failed to load stores");
       setProfiles([]);
     } else {
-      setProfiles(data as Profile[]);
+      setProfiles((data ?? []) as Profile[]);
     }
     setLoading(false);
   }
@@ -122,9 +135,7 @@ export default function StoreSwitcher() {
       </button>
 
       {open && (
-        <div
-          className="absolute left-0 top-full mt-2 w-64 rounded-xl border border-black/10 bg-white p-1 shadow-lg z-[70]"
-        >
+        <div className="absolute left-0 top-full mt-2 w-64 rounded-xl border border-black/10 bg-white p-1 shadow-lg z-[70]">
           {profiles.map((p) => (
             <button
               key={p.id}
