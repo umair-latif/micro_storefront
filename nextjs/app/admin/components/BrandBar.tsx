@@ -63,7 +63,7 @@ export default function BrandBar() {
   
           <Link
             href={`/admin/profile${store ? `?store=${store}` : ""}`}
-            className={activeClasses}
+            className=${baseClasses} ${activeClasses}
           >
             <Plus className="h-4 w-4" /> New Store
           </Link>
