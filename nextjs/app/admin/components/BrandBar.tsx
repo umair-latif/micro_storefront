@@ -11,6 +11,7 @@ import { useDrawer } from "./DrawerProvider";
 export default function BrandBar() {
   const search = useSearchParams();
   const store = search.get("store");
+  const profile = search.get("profile");
   const { toggleDrawer } = useDrawer();
   const baseClasses = "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium shadow-sm transition ";
 
@@ -62,7 +63,7 @@ export default function BrandBar() {
   
           <Link
             href={`/admin/profile${store ? `?store=${store}` : ""}`}
-            className={combinedClasses}
+            className={activeClasses}
           >
             <Plus className="h-4 w-4" /> New Store
           </Link>
