@@ -3,6 +3,8 @@ import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import { serverPasswordSignIn } from './actions';
+import { User } from "lucide-react";
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,8 +47,8 @@ export default function LoginPage() {
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b">
         <div className="mx-auto w-full max-w-5xl px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-7 h-7 rounded bg-gray-900" aria-hidden />
-            <div className="text-sm text-gray-700">Admin</div>
+            <User className="h-7 w-7" />
+            <div className="text-lg text-gray-700">Admin</div>
           </div>
         </div>
       </div>
@@ -71,14 +73,14 @@ export default function LoginPage() {
             autoComplete="current-password"
           />
           {err && <div className="text-sm text-red-600">{err}</div>}
-          <button disabled={pending} className="w-full bg-gray-900 text-white rounded py-2">
+          <button disabled={pending} className="w-full bg-gray-900 text-white rounded py-2 hover:cursor-pointer">
             {pending ? 'Loading…' : 'Log in'}
           </button>
           <button
             type="button"
             disabled={pending}
             onClick={onSignup}
-            className="w-full border rounded py-2"
+            className="w-full border rounded py-2 hover:cursor-pointer"
           >
             Create account
           </button>
