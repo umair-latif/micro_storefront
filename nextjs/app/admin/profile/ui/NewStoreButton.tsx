@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import Portal from "@/components/ui/Portal";
+import Portal from "@/components/storefront/Portal";
 import { createClient } from "@/lib/supabase-client";
 import { createStoreAction } from "@/app/admin/profile/actions";
 
