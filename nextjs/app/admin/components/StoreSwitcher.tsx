@@ -16,47 +16,66 @@ export default function StoreSwitcher() {
   const pathname = usePathname();
   const search = useSearchParams();
 
+  const supabase = useMemo(() => createClient(), []);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-
-  const currentStore = search.get("store");
   const popRef = useRef<HTMLDivElement>(null);
 
-  // fetch stores
-  useEffect(() => {
-    const supabase = createClient();
-    let cancelled = false;
+  const currentStore = search.get("store");
 
-    (async () => {
-      setLoading(true);
-      setErrorMsg(null);
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, slug, display_name")
-        .order("created_at", { ascending: true });
-      if (cancelled) return;
-      if (error) {
-        setErrorMsg("Failed to load stores");
+  // Load all stores for logged-in user
+  async function loadStores() {
+    setLoading(true);
+    setErrorMsg(null);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, slug, display_name, owner_uid")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Load stores error:", error);
+      setErrorMsg("Failed to load stores");
+      setProfiles([]);
+    } else {
+      setProfiles(data as Profile[]);
+    }
+    setLoading(false);
+  }
+
+  // Initial + reactive auth listener
+  useEffect(() => {
+    let mounted = true;
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!mounted) return;
+      if (user) loadStores();
+      else setProfiles([]);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      if (session?.user) loadStores();
+      else {
         setProfiles([]);
-      } else {
-        setProfiles((data ?? []) as Profile[]);
+        setOpen(false);
       }
-      setLoading(false);
-    })();
+    });
 
     return () => {
-      cancelled = true;
+      mounted = false;
+      sub?.subscription?.unsubscribe?.();
     };
-  }, []);
+  }, [supabase]);
 
-  // active profile
+  // Active store
   const active = useMemo(() => {
     if (!currentStore) return null;
     return profiles.find((p) => p.id === currentStore || p.slug === currentStore) || null;
   }, [profiles, currentStore]);
 
+  // Apply new store selection
   function applyStore(idOrSlug: string) {
     const params = new URLSearchParams(search.toString());
     params.set("store", idOrSlug);
@@ -64,7 +83,7 @@ export default function StoreSwitcher() {
     setOpen(false);
   }
 
-  // close on click outside / escape
+  // Close dropdown on outside click or escape
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!open) return;
@@ -92,37 +111,37 @@ export default function StoreSwitcher() {
     : errorMsg || "No stores found";
 
   return (
-    <div className="relative inline-block text-left">
-        <button
-            disabled={loading}
-            onClick={() => setOpen((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium hover:bg-neutral-50"
-        >
-            {active ? active.display_name || active.slug : loading ? "Loading..." : "Select a store"}
-            <ChevronDown className="h-4 w-4" />
-        </button>
+    <div className="relative inline-block text-left z-[62]" ref={popRef}>
+      <button
+        disabled={loading}
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium hover:bg-neutral-50"
+      >
+        {label}
+        <ChevronDown className="h-4 w-4" />
+      </button>
 
-        {open && (
-            <div
-            className="absolute left-0 top-full mt-2 w-64 rounded-xl border border-black/10 bg-white p-1 shadow-md z-50"
+      {open && (
+        <div
+          className="absolute left-0 top-full mt-2 w-64 rounded-xl border border-black/10 bg-white p-1 shadow-lg z-[70]"
+        >
+          {profiles.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => applyStore(p.id)}
+              className={`block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-neutral-50 ${
+                active?.id === p.id ? "bg-neutral-100" : ""
+              }`}
             >
-            {profiles.map((p) => (
-                <button
-                key={p.id}
-                onClick={() => {
-                    applyStore(p.id);
-                    setOpen(false);
-                }}
-                className={`block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-neutral-50 ${
-                    active?.id === p.id ? "bg-neutral-100" : ""
-                }`}
-                >
-                <div className="font-medium">{p.display_name || p.slug}</div>
-                <div className="text-xs text-neutral-500">/{p.slug}</div>
-                </button>
-            ))}
-            </div>
-        )}
+              <div className="font-medium">{p.display_name || p.slug}</div>
+              <div className="text-xs text-neutral-500">/{p.slug}</div>
+            </button>
+          ))}
+          {!profiles.length && !loading && (
+            <div className="p-3 text-sm text-neutral-500 text-center">No stores found</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
