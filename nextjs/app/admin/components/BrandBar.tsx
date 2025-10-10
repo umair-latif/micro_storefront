@@ -7,6 +7,7 @@ import { Menu, Plus } from "lucide-react";
 import StoreSwitcher from "./StoreSwitcher";
 import CopyStoreURL from "./CopyStoreURL";
 import { useDrawer } from "./DrawerProvider";
+import NewStoreButton from "@/app/admin/profile/ui/NewStoreButton";
 
 export default function BrandBar() {
   const search = useSearchParams();
@@ -61,12 +62,7 @@ export default function BrandBar() {
         <div className="relative z-[61] flex flex-1 items-center gap-2 overflow-visible">
           <StoreSwitcher />
   
-          <Link
-            href={`/admin/profile${store ? `?store=${store}` : ""}`}
-            className={`${baseClasses} ${activeClasses}`}
-          >
-            <Plus className="h-4 w-4" /> New Store
-          </Link>
+         <NewStoreButton />
 
           <CopyStoreURL />
         </div>
