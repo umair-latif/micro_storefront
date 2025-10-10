@@ -48,7 +48,7 @@ export default function BrandBar() {
           />
           {/* Desktop / large screens: logo-large */}
           <Image
-            src="/brand/_logo-large.png"
+            src="/brand/logo-large.png"
             alt="Microw"
             width={360}
             height={80}
