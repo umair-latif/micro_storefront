@@ -27,3 +27,12 @@ export async function serverPasswordSignIn(email: string, password: string) {
   if (error) return { ok: false as const, error: error.message };
   return { ok: true as const };
 }
+
+export async function serverPasswordSignUp(email: string, password: string) {
+  const supabase = getServerClient();
+  const { error } = await supabase.auth.signUp({ email, password });
+  // Note: if email confirmation is ON, user must confirm via email before sign-in works.
+  if (error) return { ok: false as const, error: error.message };
+  return { ok: true as const };
+}
+
