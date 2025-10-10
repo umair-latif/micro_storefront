@@ -1,37 +1,68 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
-import Portal from "@/components/storefront/Portal";
+import { useEffect, useState, useTransition } from "react";
+import Portal from "@/components/ui/Portal";
+import { createClient } from "@/lib/supabase-client";
 import { createStoreAction } from "@/app/admin/profile/actions";
 
 export default function NewStoreButton() {
+  const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+
+  // 🔹 Track login state
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchUser() {
+      const { data } = await supabase.auth.getUser();
+      if (mounted) setUser(data.user);
+    }
+    fetchUser();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setUser(session?.user || null);
+      if (!session?.user) setOpen(false); // close modal if logged out
+    });
+
+    return () => {
+      mounted = false;
+      sub?.subscription?.unsubscribe?.();
+    };
+  }, [supabase]);
 
   function onSubmit(formData: FormData) {
     setErr(null);
     start(async () => {
       const res = await createStoreAction(formData);
       if (res && !res.ok) setErr(res.error);
-      // success will redirect server-side
     });
   }
 
-  // optional: lock body scroll when modal is open
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, [open]);
+  // 🧱 If user is not logged in, show disabled button
+  if (!user) {
+    return (
+      <button
+        disabled
+        title="Please log in to create a store"
+        className="inline-flex items-center gap-2 rounded-xl bg-neutral-200 px-3 py-2 text-sm font-medium text-neutral-500 cursor-not-allowed"
+      >
+        New Store
+      </button>
+    );
+  }
 
+  // 🧩 Main logged-in UI
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+        disabled={pending}
+        className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
       >
         New Store
       </button>
@@ -42,11 +73,11 @@ export default function NewStoreButton() {
             className="fixed inset-0 z-[100] flex justify-center bg-black/40 overflow-y-auto pt-24 pb-10"
             aria-modal="true"
             role="dialog"
-            onClick={() => setOpen(false)}  // click backdrop closes
+            onClick={() => setOpen(false)}
           >
             <div
               className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl"
-              onClick={(e) => e.stopPropagation()} // prevent backdrop close
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="text-base font-semibold mb-2">Create a new store</div>
               {err && (
