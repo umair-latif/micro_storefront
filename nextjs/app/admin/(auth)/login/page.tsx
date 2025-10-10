@@ -3,7 +3,7 @@ import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import { serverPasswordSignIn, serverPasswordSignUp } from './actions';
-import { User } from "lucide-react";
+import { User, Eye, EyeOff  } from "lucide-react";
 
 
 export default function LoginPage() {
@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [pw, setPw] = useState('');
   const [err, setErr] = useState('');
   const [pending, start] = useTransition();
+  const [showPw, setShowPw] = useState(false);
+
 
   async function onLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -75,18 +77,32 @@ export default function LoginPage() {
             onChange={(e)=>setEmail(e.target.value)}
             autoComplete="email"
           />
-          <input
-            className="w-full border rounded px-3 py-2"
-            placeholder="Password"
-            type="password"
-            value={pw}
-            onChange={(e)=>setPw(e.target.value)}
-            autoComplete="current-password"
-          />
+          <div className="relative">
+            <input
+              className="w-full border rounded px-3 py-2"
+              placeholder="Password"
+              type={showPw ? "text" : "password"}            
+              value={pw}
+              onChange={(e)=>setPw(e.target.value)}
+              autoComplete="current-password"
+              required
+              minLength={6}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw((v) => !v)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              aria-label={showPw ? "Hide password" : "Show password"}
+            >
+              {showPw ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
+          </div>
+
           {err && <div className="text-sm text-red-600">{err}</div>}
           <button disabled={pending} className="w-full bg-gray-900 text-white rounded py-2 hover:cursor-pointer">
             {pending ? 'Loading…' : 'Log in'}
           </button>
+          
           <button
             type="button"
             disabled={pending}

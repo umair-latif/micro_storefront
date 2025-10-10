@@ -39,9 +39,10 @@ export default function BrandBar() {
           {/* Mobile / small screens: logo-mark */}
           <Image
             src="/brand/logo-mark.png"
-            alt="Microw"
-            width={28}
-            height={28}
+            alt="microw"
+            title="micro.me"
+            width={48}
+            height={48}
             className="block lg:hidden"
             priority
           />
