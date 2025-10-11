@@ -4,30 +4,27 @@ import { useEffect, useState, useTransition } from "react";
 import Portal from "@/components/storefront/Portal";
 import { createClient } from "@/lib/supabase-client";
 import { createStoreAction } from "@/app/admin/profile/actions";
+import { Plus, Minus } from "lucide-react";
 
-export default function NewStoreButton() {
+export default function NewStoreButton({ variant = "full" }: { variant?: "full" | "icon" }) {
   const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
+console.log(variant);
 
-  // 🔹 Track login state
   useEffect(() => {
     let mounted = true;
-
-    async function fetchUser() {
+    (async () => {
       const { data } = await supabase.auth.getUser();
       if (mounted) setUser(data.user);
-    }
-    fetchUser();
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    })();
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       if (!mounted) return;
-      setUser(session?.user || null);
-      if (!session?.user) setOpen(false); // close modal if logged out
+      setUser(s?.user || null);
+      if (!s?.user) setOpen(false);
     });
-
     return () => {
       mounted = false;
       sub?.subscription?.unsubscribe?.();
@@ -42,30 +39,34 @@ export default function NewStoreButton() {
     });
   }
 
-  // 🧱 If user is not logged in, show disabled button
-  if (!user) {
-    return (
-      <button
-        disabled
-        title="Please log in to create a store"
-        className="inline-flex items-center gap-2 rounded-xl bg-neutral-200 px-3 py-2 text-sm font-medium text-neutral-500 cursor-not-allowed"
-      >
-        New Store
-      </button>
-    );
-  }
+  const isDisabled = !user || pending;
 
-  // 🧩 Main logged-in UI
-  return (
-    <>
+  const trigger =
+    variant === "icon" ? (
+      <button
+        type="button"
+        aria-label={user ? "New store" : "Log in to create store"}
+        onClick={() => user && setOpen(true)}
+        disabled={isDisabled}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white hover:bg-neutral-50 disabled:opacity-60"
+      >
+        <Plus className="h-4 w-4" />
+      </button>
+    ) : (
       <button
         type="button"
         onClick={() => setOpen(true)}
-        disabled={pending}
+        disabled={isDisabled}
         className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
       >
-        New Store
+        <Plus className="h-4 w-4" />
+        <span className="hidden sm:inline">New Store</span>
       </button>
+    );
+
+  return (
+    <>
+      {trigger}
 
       {open && (
         <Portal>

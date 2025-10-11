@@ -301,18 +301,19 @@ export default function ProfilePage() {
             <button
               onClick={() => coverInputRef.current?.click()}
               disabled={uploadingCover}
+              title="Upload cover"
               className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white/90 px-3 py-1.5 text-xs backdrop-blur hover:bg-white disabled:opacity-60"
             >
               {uploadingCover ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {uploadingCover ? "Uploading…" : "Upload cover"}
+              {uploadingCover ? "Uploading…" : ""}
             </button>
             <button
               onClick={() => deleteImage("cover")}
+              title="Delete cover"
               disabled={!profile.header_img || deletingCover}
               className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white/90 px-3 py-1.5 text-xs backdrop-blur hover:bg-white disabled:opacity-60"
             >
               {deletingCover ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              Delete
             </button>
           </div>
         </div>
@@ -344,18 +345,21 @@ export default function ProfilePage() {
               <button
                 onClick={() => avatarInputRef.current?.click()}
                 disabled={uploadingAvatar}
+                title="Upload avatar"
+
                 className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-neutral-50 disabled:opacity-60"
               >
                 {uploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                {uploadingAvatar ? "Uploading…" : "Upload avatar"}
+                {uploadingAvatar ? "Uploading…" : ""}
               </button>
               <button
                 onClick={() => deleteImage("avatar")}
                 disabled={!profile.profile_img || deletingAvatar}
+                title="Delete avatar"
+
                 className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-neutral-50 disabled:opacity-60"
               >
                 {deletingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                Delete
               </button>
             </div>
           </div>
