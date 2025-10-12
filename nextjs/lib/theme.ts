@@ -1,94 +1,161 @@
 import type { StorefrontConfig, StorefrontTheme } from "./types";
+// Assuming types.ts contains:
+// type StorefrontConfig = { theme?: StorefrontTheme; ... };
+// type StorefrontTheme = { variant?: 'clean'|'bold'|'minimal'; palette?: { preset?: string; primary?: string | null; accent?: string | null }; background?: { type: 'color' | 'gradient' | 'image' | 'none'; value: string | null }; }
 
+// Define the full set of resolved properties
 export type ResolvedTheme = {
-  background: string;
-  surface: string;
-  text: string;
-  muted: string;
-  accent: string;
+    // RESOLVED COLOR TOKENS
+    surface: string;
+    text: string;
+    muted: string;
+    accent: string;
+    background: string; 
 
-  variant: "clean" | "bold" | "minimal"; // NEW
-  primary: string;                        // NEW
+    // NEW BACKGROUND PROPERTIES
+    backgroundType: 'color' | 'gradient' | 'image' | 'none'; 
 
-  wrapper: string;
-  card: string;
-  button: string;
-  chip: string;
+    variant: "clean" | "bold" | "minimal";
+    primary: string; // The primary color (used for text/links in bold, or sometimes main text in minimal)
+
+    // UTILITY/CSS CLASS STRINGS
+    wrapper: string;
+    card: string;
+    button: string;
+    chip: string;
 };
 
-function clampHex(fallback: string, color?: string | null): string {
-  const c = (color ?? "").trim();
-  return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c) ? c : fallback;
+// Define a type for the base color tokens (surface, text, muted, accent, background)
+// This simplifies the definition of CLEAN, MINIMAL, etc.
+type BaseColorTokens = Omit<ResolvedTheme, "wrapper" | "card" | "button" | "chip" | "variant" | "primary" | "backgroundType">;
+
+
+/**
+ * Ensures a color is a valid hex code, otherwise returns fallback.
+ */
+function clampHex(fallback: string | null, color?: string | null): string {
+    const c = (color ?? "").trim();
+    // Allow 3 or 6 digit hex codes
+    return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c) ? c : (fallback ?? '');
 }
 
 // Clean presets (IG-like neutrals)
-const CLEAN: Record<string, Omit<ResolvedTheme, "wrapper" | "card" | "button" | "chip" | "variant" | "primary">> = {
-  default: { background:"#fafafa", surface:"#ffffff", text:"#111111", muted:"#6b7280", accent:"#111111" },
-  warm:    { background:"#fbf7f2", surface:"#ffffff", text:"#1a1a1a", muted:"#7a6a5a", accent:"#1a1a1a" },
-  cool:    { background:"#f5f7fb", surface:"#ffffff", text:"#121212", muted:"#62708a", accent:"#121212" },
+const CLEAN: Record<string, BaseColorTokens> = {
+    default: { background:"#fafafa", surface:"#ffffff", text:"#111111", muted:"#6b7280", accent:"#111111" },
+    warm: 	 { background:"#fbf7f2", surface:"#ffffff", text:"#1a1a1a", muted:"#7a6a5a", accent:"#1a1a1a" },
+    cool: 	 { background:"#f5f7fb", surface:"#ffffff", text:"#121212", muted:"#62708a", accent:"#121212" },
 };
 
 // Minimal presets (light/dark)
-const MINIMAL: Record<string, Omit<ResolvedTheme, "wrapper" | "card" | "button" | "chip" | "variant" | "primary">> = {
-  light: { background:"#ffffff", surface:"#ffffff", text:"#0f172a", muted:"#64748b", accent:"#0f172a" },
-  dark:  { background:"#0b0f19", surface:"#0f1424", text:"#e5e7eb", muted:"#9aa4b2", accent:"#e5e7eb" },
+const MINIMAL: Record<string, BaseColorTokens> = {
+    light: { background:"#ffffff", surface:"#ffffff", text:"#0f172a", muted:"#64748b", accent:"#0f172a" },
+    dark: 	 { background:"#0b0f19", surface:"#0f1424", text:"#e5e7eb", muted:"#9aa4b2", accent:"#e5e7eb" },
 };
 
-// Bold derives from primary/accent (or named presets)
+// Bold derives from primary/accent (or named presets) - Needs explicit primary/accent fields
+// We define the key Primary/Accent colors, and let the base be CLEAN.default unless otherwise specified
 const BOLD_PRESETS: Record<string, { primary: string; accent: string; background?: string; surface?: string; text?: string; muted?: string }> = {
-  sunset: { primary:"#ef4444", accent:"#f59e0b" },
-  ocean:  { primary:"#0ea5e9", accent:"#22c55e" },
-  forest: { primary:"#16a34a", accent:"#22d3ee" },
+    sunset: { primary:"#ef4444", accent:"#f59e0b" },
+    ocean: 	{ primary:"#0ea5e9", accent:"#22c55e" },
+    forest: { primary:"#16a34a", accent:"#22d3ee" },
 };
 
+/**
+ * Finalizes the resolved color tokens and adds utility CSS class strings.
+ * @param base - The resolved color tokens, including the final background value.
+ * @param meta - Additional metadata like variant, primary color, and background type.
+ */
 function finalizeTokens(
-  base: Omit<ResolvedTheme, "wrapper" | "card" | "button" | "chip" | "variant" | "primary">,
-  meta: { variant: "clean" | "bold" | "minimal"; primary: string }
+    base: BaseColorTokens & { background: string }, // Base + final background value
+    meta: { variant: "clean" | "bold" | "minimal"; primary: string; backgroundType: ResolvedTheme['backgroundType'] }
 ): ResolvedTheme {
-  const t = base;
-  return {
-    ...t,
-    variant: meta.variant,
-    primary: meta.primary,
-    wrapper: "min-h-screen",
-    card: "rounded-2xl border border-black/10 bg-white shadow-sm",
-    button: "inline-flex items-center gap-2 rounded-full px-4 py-2 border border-black/10 shadow-sm hover:shadow",
-    chip: "inline-flex items-center rounded-full border border-black/10 px-3 py-1.5 text-sm bg-white",
-  };
+    return {
+        // Spread all resolved colors (surface, text, muted, accent, background)
+        ...base, 
+        
+        // Add required metadata
+        variant: meta.variant,
+        primary: meta.primary, 
+        backgroundType: meta.backgroundType,
+
+        // Add utility/CSS class strings
+        wrapper: "min-h-screen",
+        // NOTE: card CSS needs to be adjusted in the application layer if using a dark theme
+        card: "rounded-2xl border border-black/10 bg-white shadow-sm",
+        button: "inline-flex items-center gap-2 rounded-full px-4 py-2 border border-black/10 shadow-sm hover:shadow",
+        chip: "inline-flex items-center rounded-full border border-black/10 px-3 py-1.5 text-sm bg-white",
+    } as ResolvedTheme; 
 }
 
+
 export function getThemeFromConfig(cfg: StorefrontConfig): ResolvedTheme {
-  const theme: StorefrontTheme | undefined = cfg.theme;
-  const variant = theme?.variant ?? "clean";
-  const preset = theme?.palette?.preset ?? "default";
+    const theme: StorefrontTheme | undefined = cfg.theme;
+    const variant = theme?.variant ?? "clean";
+    const preset = theme?.palette?.preset ?? "default";
+    
+    // --- 1. RESOLVE BASE COLOR TOKENS (surface, text, muted, accent, background) ---
+    let base: BaseColorTokens;
+    let resolvedAccent: string;  // Accent color from the preset
+    let resolvedPrimary: string; // Primary color from the preset (defaults to accent for non-bold)
+    
+    // Start with the default clean base
+    base = CLEAN.default;
+    resolvedAccent = base.accent;
+    resolvedPrimary = base.accent;
 
-  if (variant === "minimal") {
-    const p = MINIMAL[preset] ?? MINIMAL.light;
-    // primary can mirror accent for non-Bold variants
-    return finalizeTokens(p, { variant: "minimal", primary: p.accent });
-  }
-
-  if (variant === "bold") {
-    if (BOLD_PRESETS[preset]) {
-      const bp = BOLD_PRESETS[preset];
-      const primary = clampHex( "#111111", bp.primary,);
-      const accent  = clampHex( "#111111", bp.accent);
-      const background = bp.background ?? "#ffffff";
-      const surface    = bp.surface    ?? "#ffffff";
-      const text       = bp.text       ?? "#111111";
-      const muted      = bp.muted      ?? "#6b7280";
-      return finalizeTokens({ background, surface, text, muted, accent }, { variant: "bold", primary });
+    if (variant === "minimal") {
+        base = MINIMAL[preset] ?? MINIMAL.light;
+        resolvedAccent = base.accent;
+        resolvedPrimary = base.accent;
+    } else if (variant === "bold") {
+        if (BOLD_PRESETS[preset]) {
+            const bp = BOLD_PRESETS[preset];
+            // Bold starts with clean default base, but overrides specific parts
+            
+            resolvedAccent = clampHex(base.accent, bp.accent);
+            resolvedPrimary = clampHex(base.accent, bp.primary);
+            
+            // Use explicitly defined colors from BOLD_PRESETS if they exist (for dark bold themes)
+            base.background = bp.background ?? base.background;
+            base.surface = bp.surface 	?? base.surface;
+            base.text = bp.text 		?? base.text;
+            base.muted = bp.muted 		?? base.muted;
+        } 
+        // If preset is 'custom' or unknown, it keeps the clean default base, relying on Step 2 for color.
+    } else {
+        // clean preset
+        base = CLEAN[preset] ?? CLEAN.default;
+        resolvedAccent = base.accent;
+        resolvedPrimary = base.accent;
     }
-    // custom colors
-    const primary = clampHex( "#111111", theme?.palette?.primary);
-    const accent  = clampHex( "#6b7280", theme?.palette?.accent);
-    return finalizeTokens(
-      { background:"#ffffff", surface:"#ffffff", text:"#111111", muted:"#6b7280", accent: primary || "#111111" },
-      { variant: "bold", primary } // expose primary even for custom
-    );
-  }
 
-  // clean default
-  const c = CLEAN[preset] ?? CLEAN.default;
-  return finalizeTokens(c, { variant: "clean", primary: c.accent });
+    // --- 2. APPLY CUSTOM COLOR OVERRIDES (Overrides always take precedence) ---
+    const customAccent = clampHex(null, theme?.palette?.accent);
+    const customPrimary = clampHex(null, theme?.palette?.primary);
+
+    const finalAccent = customAccent || resolvedAccent;
+    const finalPrimary = customPrimary || resolvedPrimary;
+    
+    // Update base with the final accent color
+    const finalBase: BaseColorTokens = { ...base, accent: finalAccent };
+    
+    
+    // --- 3. RESOLVE DYNAMIC BACKGROUND ---
+    const bgType = theme?.background?.type ?? 'color';
+    let bgValue = theme?.background?.value ?? '';
+    
+    // Fallback logic: If no custom value is set OR if type is 'none', use the base background color
+    if (!bgValue || bgType === 'none') {
+        bgValue = finalBase.background;
+    }
+
+    // --- 4. FINALIZE ---
+    return finalizeTokens(
+        { ...finalBase, background: bgValue }, // Base + final background value
+        { 
+            variant, 
+            primary: finalPrimary, 
+            backgroundType: bgType as ResolvedTheme['backgroundType'] 
+        }
+    );
 }
