@@ -50,10 +50,10 @@ export const PREDEFINED_THEMES: { name: string; preset: FullThemePreset }[] = [
     },
     {
         name: "Midnight Muse",
-        // variant: clean, custom colors, dark solid background
+        // variant: minimal, custom colors, dark solid background
         preset: {
             sort: "newest",
-            theme: { variant: "clean", palette: { accent: "#8B5CF6", preset: "dark", primary: "#F3F4F6" }, background: { type: "color", value: "#111827" } },
+            theme: { variant: "minimal", palette: { accent: "#8B5CF6", preset: "dark", primary: "#F3F4F6" }, background: { type: "color", value: "#111827" } },
             display_mode: "grid_2", landing_page: "products", show_categories: false
         }
     },

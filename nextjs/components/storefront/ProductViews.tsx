@@ -42,12 +42,12 @@ function Grid({ products, theme, slug, whatsapp, activeCatId, gridVariant }: any
       break;
     case "grid_3": // 3 columns: very instagram style grid, only images.
       columns = "grid-cols-3";
-      gapClass = "gap-0";
+      gapClass = "gap-2";
       cardVariant = "grid-ig";
       break;
     case "grid": // Default (compatibility)
     default:
-      columns = "grid-cols-1 sm:grid-cols-2";
+      columns = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
       cardVariant = "grid";
       break;
   }

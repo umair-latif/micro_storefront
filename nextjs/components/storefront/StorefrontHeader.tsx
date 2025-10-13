@@ -4,6 +4,7 @@ import Image from "next/image";
 import SocialLinks from "@/components/storefront/SocialLinks";
 import CTAButtons from "@/components/storefront/CTAButtons";
 import { type SocialsConfig } from "@/lib/types";
+import ReactMarkdown from "react-markdown";
 
 /** convert hex like #ef4444 to rgba(..., alpha) */
 function withAlpha(hex: string | undefined, alpha: number, fallback = "#111111") {
@@ -65,12 +66,13 @@ export default function StorefrontHeader({
           </h1>
 
           {bio ? (
-            <p
+             <div
               className="mt-2 max-w-2xl text-center text-sm leading-relaxed break-words"
-              style={{ color: theme.muted }}
+              // Add white-space: pre-wrap to respect line breaks and multiple spaces
+              style={{ color: theme.muted, whiteSpace: "pre-wrap" }}
             >
-              {bio}
-            </p>
+              <ReactMarkdown>{bio}</ReactMarkdown>
+            </div>
           ) : null}
 
           <div className="mt-4 flex flex-col items-center gap-3">
@@ -133,9 +135,13 @@ export default function StorefrontHeader({
             </h1>
             
             {bio ? (
-              <p className="mt-1 text-sm leading-relaxed" style={{ color: theme.muted }}>
-                {bio}
-              </p>
+               <div 
+                className="mt-1 text-sm leading-relaxed" 
+                // Add white-space: pre-wrap to respect line breaks and multiple spaces
+                style={{ color: theme.muted, whiteSpace: "pre-wrap" }}
+              >
+                <ReactMarkdown>{bio}</ReactMarkdown>
+              </div>
             ) : null}
 
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">

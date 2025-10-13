@@ -69,6 +69,9 @@ function finalizeTokens(
     base: BaseColorTokens & { background: string }, // Base + final background value
     meta: { variant: "clean" | "bold" | "minimal"; primary: string; backgroundType: ResolvedTheme['backgroundType'] }
 ): ResolvedTheme {
+    const cardBorderColor = meta.variant === "minimal" && base.background === MINIMAL.dark.background
+        ? "border-white/10" // Use light border on dark minimal theme
+        : "border-black/10"; // Use dark border otherwise
     return {
         // Spread all resolved colors (surface, text, muted, accent, background)
         ...base, 
@@ -81,7 +84,7 @@ function finalizeTokens(
         // Add utility/CSS class strings
         wrapper: "min-h-screen",
         // NOTE: card CSS needs to be adjusted in the application layer if using a dark theme
-        card: "rounded-2xl border border-black/10 bg-white shadow-sm",
+        card: `rounded-2xl border ${cardBorderColor} shadow-sm`, 
         button: "inline-flex items-center gap-2 rounded-full px-4 py-2 border border-black/10 shadow-sm hover:shadow",
         chip: "inline-flex items-center rounded-full border border-black/10 px-3 py-1.5 text-sm bg-white",
     } as ResolvedTheme; 
@@ -92,6 +95,7 @@ export function getThemeFromConfig(cfg: StorefrontConfig): ResolvedTheme {
     const theme: StorefrontTheme | undefined = cfg.theme;
     const variant = theme?.variant ?? "clean";
     const preset = theme?.palette?.preset ?? "default";
+
     
     // --- 1. RESOLVE BASE COLOR TOKENS (surface, text, muted, accent, background) ---
     let base: BaseColorTokens;
@@ -111,7 +115,6 @@ export function getThemeFromConfig(cfg: StorefrontConfig): ResolvedTheme {
         if (BOLD_PRESETS[preset]) {
             const bp = BOLD_PRESETS[preset];
             // Bold starts with clean default base, but overrides specific parts
-            
             resolvedAccent = clampHex(base.accent, bp.accent);
             resolvedPrimary = clampHex(base.accent, bp.primary);
             
