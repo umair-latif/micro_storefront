@@ -7,18 +7,26 @@ const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export function createSupabaseServerClient() {
   const cookieStore = cookies();
 
-  // Hybrid adapter to satisfy different @supabase/ssr versions
+  // The cookie adapter MUST have set/remove functions, but for read-only 
+  // Server Components, they must be stubbed out to prevent the Next.js error.
+  const NOOP = () => {};
+
   const cookieAdapter = {
-    // New API
+    // Read: Necessary for the Supabase client to read the session cookie if it exists.
     get(name: string) { return cookieStore.get(name)?.value; },
-    set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }); },
-    remove(name: string, options: CookieOptions) { cookieStore.set({ name, value: "", ...options, expires: new Date(0) }); },
-    // Legacy API
+    
+    // Write: These must be NOOPs (No Operation) to avoid the Next.js error
+    // in components that are NOT Server Actions or Route Handlers.
+    set: NOOP, 
+    remove: NOOP, 
+
+    // Legacy APIs: Also stub out the writing methods
     getAll() { return cookieStore.getAll().map(({ name, value }) => ({ name, value })); },
     setAll(list: { name: string; value: string; options?: CookieOptions }[]) {
-      list.forEach(({ name, value, options }) => cookieStore.set({ name, value, ...(options ?? {}) }));
+      // Stub this out as well.
+      // list.forEach(({ name, value, options }) => cookieStore.set({ name, value, ...(options ?? {}) }));
     },
-  } as any;
+  } as any; // Cast as any to satisfy type checks due to the legacy setAll stub
 
   return createServerClient(url, anon, { cookies: cookieAdapter });
 }
