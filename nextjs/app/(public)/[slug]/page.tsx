@@ -65,48 +65,43 @@ export async function generateMetadata(
 }
 
 export default async function StorefrontPage({
-  params,
-  searchParams,
+  params,
+  searchParams,
 }: {
-  params: { slug: string };
-  searchParams: { view?: "grid" | "list" | "links"; cat?: string };
+  params: { slug: string };
+  searchParams: { view?: "grid" | "list" | "links"; cat?: string };
 }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerClient();
 
-  const { data: p } = await supabase
-    .from("profiles")
-    .select(
-      "id, slug, display_name, bio, profile_img, header_img, wa_e164, socials_config, storefront_config, is_public"
-    )
-    .eq("slug", params.slug)
-    .is("is_public", true)
-    .maybeSingle();
+  // --- MODIFICATION: Use one robust fetch that selects all fields ---
+  // Note: We use the * to ensure we get a result if a single column is causing an issue.
+  const { data: pFull } = await supabase
+    .from("profiles")
+    .select("*") // Select all columns for robustness
+    .eq("slug", params.slug)
+    .is("is_public", true)
+    .maybeSingle();
 
-  // 🔍 Debug logs
-  console.log("[Storefront] slug:", params.slug);
-  console.log("[Storefront] storefront_config (selected fields):", p?.storefront_config);
+  // 🔍 Debug logs (pFull is now the main variable)
+  console.log("[Storefront] slug:", params.slug);
+  console.log("[Storefront] storefront_config (FULL row):", pFull?.storefront_config);
+  console.log("[Storefront] id/slug:", pFull?.id, pFull?.slug); // This is what is now succeeding
 
-  // extra full-row fetch just to compare
-  const { data: pFull } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("slug", params.slug)
-    .is("is_public", true)
-    .maybeSingle();
-  console.log("[Storefront] storefront_config (FULL row):", pFull?.storefront_config);
-  console.log("[Storefront] row keys:", Object.keys(pFull || {}));
-  console.log("[Storefront] id/slug:", pFull?.id, pFull?.slug);
+  // --- MODIFICATION: Check pFull instead of p ---
+  if (!pFull) { // Check pFull, which is your successful query result
+    return (
+      <main className="mx-auto max-w-2xl p-6 text-center">
+        <h1 className="text-2xl font-semibold">Storefront not found</h1>
+        <p className="mt-2 text-muted-foreground">
+          Check the URL or contact the owner.
+        </p>
+      </main>
+    );
+  }
 
-  if (!p) {
-    return (
-      <main className="mx-auto max-w-2xl p-6 text-center">
-        <h1 className="text-2xl font-semibold">Storefront not found</h1>
-        <p className="mt-2 text-muted-foreground">
-          Check the URL or contact the owner.
-        </p>
-      </main>
-    );
-  }
+  // --- MODIFICATION: Rename pFull to p for the rest of the file's consistency ---
+  const p = pFull as unknown as Profile; // Cast the successful result to your Profile type for downstream use
+
 
   // --- BEGIN robust config parsing + debug ---
   const rawCfg = (p as any).storefront_config ?? {};
