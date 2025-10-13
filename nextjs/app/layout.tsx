@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Micro Storefront",
-  description: "Next.js + Supabase micro-storefront",
+  title: "microw.me",
+  description: "space for your mega ideas",
 };
 
 export default function RootLayout({

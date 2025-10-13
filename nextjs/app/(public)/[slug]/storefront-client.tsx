@@ -351,7 +351,7 @@ export default function StorefrontClient({
             </a>
           </div>
           <div className="text-xs text-gray-500">
-            © {new Date().getFullYear()} Instore • Terms • Privacy • Contact
+            © {new Date().getFullYear()} microw.me • Terms • Privacy • Contact
           </div>
         </div>
       </footer>

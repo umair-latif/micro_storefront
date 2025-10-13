@@ -1,14 +1,18 @@
+
 // components/storefront/ProductViews.tsx
 "use client";
 import ProductCard from "@/components/storefront/ProductCard";
 import Link from "next/link";
 import { type Product } from "@/lib/types";
 
+// Extended type for the view prop
+type ProductViewVariant = "grid" | "list" | "links" | "grid_1" | "grid_2" | "grid_3";
+
 export default function ProductViews({
   products, view, theme, slug, whatsapp, activeCatId = "all",
 }: {
   products: Product[];
-  view: "grid" | "list" | "links";
+  view: ProductViewVariant; // Use the extended type
   theme: any;
   slug: string;
   whatsapp?: string | null;
@@ -16,14 +20,50 @@ export default function ProductViews({
 }) {
   if (view === "links") return <Linktree products={products} theme={theme} slug={slug} activeCatId={activeCatId} />;
   if (view === "list")   return <List products={products} theme={theme} slug={slug} whatsapp={whatsapp} activeCatId={activeCatId} />;
-  return <Grid products={products} theme={theme} slug={slug} whatsapp={whatsapp} activeCatId={activeCatId} />;
+  
+  // All grid variants are handled by the Grid component
+  return <Grid products={products} theme={theme} slug={slug} whatsapp={whatsapp} activeCatId={activeCatId} gridVariant={view} />;
 }
 
-function Grid({ products, theme, slug, whatsapp, activeCatId }: any) {
+function Grid({ products, theme, slug, whatsapp, activeCatId, gridVariant }: any) {
+  // Determine grid columns based on the new view variants
+  let columns;
+  let gapClass = "gap-4";
+  let cardVariant: "grid" | "grid-large" | "grid-clean" | "grid-ig"; // Map view to internal card variant
+
+  switch (gridVariant) {
+    case "grid_1": // 1 column: larger slightly rectangular product image with title underneath in middle.
+      columns = "grid-cols-1";
+      cardVariant = "grid-large";
+      break;
+    case "grid_2": // 2 columns: only square images with clean lines and clean distance in between
+      columns = "grid-cols-2";
+      cardVariant = "grid-clean";
+      break;
+    case "grid_3": // 3 columns: very instagram style grid, only images.
+      columns = "grid-cols-3";
+      gapClass = "gap-2";
+      cardVariant = "grid-ig";
+      break;
+    case "grid": // Default (compatibility)
+    default:
+      columns = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+      cardVariant = "grid";
+      break;
+  }
+
   return (
-    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <section className={`grid ${columns} ${gapClass}`}>
       {products.map((p: Product) => (
-        <ProductCard key={p.id} product={p} theme={theme} variant="grid" slug={slug} whatsapp={whatsapp} activeCatId={activeCatId} />
+        <ProductCard 
+          key={p.id} 
+          product={p} 
+          theme={theme} 
+          variant={cardVariant} 
+          slug={slug} 
+          whatsapp={whatsapp} 
+          activeCatId={activeCatId} 
+        />
       ))}
     </section>
   );

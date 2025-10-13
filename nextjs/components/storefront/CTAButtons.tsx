@@ -24,10 +24,10 @@ export default function CTAButtons({
 
   if (whatsapp) {
     const href = `https://wa.me/${whatsapp.replace(/[^\d]/g, "")}`;
-    items.push({ label: "WhatsApp", href, key: "wa" });
+    items.push({ label: "Contact via WhatsApp", href, key: "wa" });
   }
   if (instagramUrl) {
-    items.push({ label: "Instagram", href: instagramUrl, key: "ig" });
+    items.push({ label: "Open in Instagram", href: instagramUrl, key: "ig" });
   }
   if (customUrl && (customLabel || "").trim()) {
     items.push({ label: customLabel!, href: customUrl, key: "custom" });
