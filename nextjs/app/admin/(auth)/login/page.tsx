@@ -1,10 +1,9 @@
 'use client';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import { serverPasswordSignIn, serverPasswordSignUp } from './actions';
-import { User, Eye, EyeOff  } from "lucide-react";
-
+import { User, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,41 +15,41 @@ export default function LoginPage() {
   const [err, setErr] = useState('');
   const [pending, start] = useTransition();
   const [showPw, setShowPw] = useState(false);
+  const supabase = createClient();
 
+  // 🔒 NEW: If already authenticated, don’t show the form—go to /admin (or next)
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
+      if (data.user) {
+        router.replace(next);   // immediately leave the login page
+      }
+    });
+    return () => { mounted = false; };
+  }, [supabase, router, next]);
 
   async function onLogin(e: React.FormEvent) {
     e.preventDefault();
     setErr('');
     start(async () => {
-      const supabase = createClient();
-
-      // 1) Browser sign-in (gives JWT in localStorage so uploads are authenticated)
+      // (unchanged) client + server sign-in
       const { error: e1 } = await supabase.auth.signInWithPassword({ email, password: pw });
       if (e1) return setErr(e1.message);
-
-      // 2) Server sign-in (sets httpOnly cookies for SSR/middleware)
       const res = await serverPasswordSignIn(email, pw);
       if (!res.ok) return setErr(res.error);
-
       router.replace(next);
     });
   }
+
   async function onSignup(e: React.FormEvent) {
     e.preventDefault();
     setErr('');
     start(async () => {
-      const supabase = createClient();
-
-      // 1) client sign up (creates account + sets session if email confirmations are disabled)
       const { error: e1 } = await supabase.auth.signUp({ email, password: pw });
       if (e1) return setErr(e1.message);
-
-      // 2) server sign up (sets cookies if a session exists; if email confirm is required,
-      //    this may not set a session until the user confirms)
       const res = await serverPasswordSignUp(email, pw);
       if (!res.ok) return setErr(res.error);
-
-      // If email confirmation is ON, tell the user to check their inbox.
       router.replace('/admin/login?m=check_email');
     });
   }
