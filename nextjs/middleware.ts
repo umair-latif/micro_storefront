@@ -37,6 +37,11 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // If already authed and hitting the login page, go to /admin
+  if (pathname.startsWith('/admin/(auth)/login') && user) {
+  return NextResponse.redirect(new URL('/admin', req.url));
+  }
+
   return res;
 }
 
