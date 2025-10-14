@@ -49,7 +49,7 @@ export default function BrandBar() {
   const isWide = useMedia("(min-width: 768px)", true);
 
   return (
-    <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b">
+    <div className="sticky top-0 z-[60] bg-white/90 backdrop-blur border-b">
       <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 py-2 flex items-center gap-3">
         {/* Left: drawer toggle on mobile */}
         <button
@@ -63,9 +63,9 @@ export default function BrandBar() {
         {/* Brand */}
         <Link href="/admin" className="flex items-center gap-2 min-w-0">
           {/* small mark */}
-          <Image src="/brand/mark.svg" alt="microw" width={28} height={28} className="block sm:hidden" />
+          <Image src="/brand/logo_mark.png" alt="microw" width={28} height={28} className="block sm:hidden" />
           {/* full logo on ≥sm */}
-          <Image src="/brand/logo-type.svg" alt="Microw" width={90} height={24} className="hidden sm:block" />
+          <Image src="/brand/logo-large.png" alt="Microw" width={90} height={24} className="hidden sm:block" />
         </Link>
 
         {/* Center actions (grow to push tools to the right) */}
@@ -73,9 +73,9 @@ export default function BrandBar() {
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
-          <CopyStoreURL />
-          <NewStoreButton />
           <StoreSwitcher />
+          <NewStoreButton />
+          <CopyStoreURL />
           {/* 🔒 New: Logout moved here */}
           <LogoutButton isWide={isWide} />
         </div>
