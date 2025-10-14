@@ -9,6 +9,7 @@ import CopyStoreURL from "./CopyStoreURL";
 import { useDrawer } from "./DrawerProvider";
 import NewStoreButton from "@/app/admin/profile/ui/NewStoreButton";
 import { useMedia } from "@/lib/useMedia";
+import { useState } from "react";
 
 export default function BrandBar() {
 const search = useSearchParams();
