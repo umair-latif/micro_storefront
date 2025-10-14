@@ -61,11 +61,27 @@ export default function BrandBar() {
         </button>
 
         {/* Brand */}
-        <Link href="/admin" className="flex items-center gap-2 min-w-0">
-          {/* small mark */}
-          <Image src="/brand/logo_mark.png" alt="microw" width={28} height={28} className="block sm:hidden" />
-          {/* full logo on ≥sm */}
-          <Image src="/brand/logo-large.png" alt="Microw" width={90} height={24} className="hidden sm:block" />
+         <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Microw Home">
+          {/* Small: mark */}
+          <Image
+            src="/brand/logo-mark.png"
+            alt="microw"
+            title="micro.me"
+            width={48}
+            height={48}
+            className="block lg:hidden h-8 w-8 min-h-8 min-w-8"
+            priority
+          />
+          {/* Large: full logo */}
+          <Image
+            src="/brand/logo-large.png"
+            alt="Microw"
+            title="micro.me"
+            width={460}
+            height={380}
+            className="hidden lg:block h-12 w-auto shrink-0"
+            priority
+          />
         </Link>
 
         {/* Center actions (grow to push tools to the right) */}
