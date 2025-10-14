@@ -7,27 +7,42 @@ export default function SiteFooter() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
         {/* Left: brand + tagline */}
         <div className="flex items-center gap-3">
-          <Logo className="h-7 w-7" />
-          <div>
-            <Link href="/" className="text-base font-semibold tracking-tight hover:opacity-80">
-              microw.me
-            </Link>
-            <p className="text-sm text-black/60">simple storefronts for creators</p>
-          </div>
+          <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Microw Home">
+          {/* Small: mark */}
+          <Image
+            src="/brand/logo-mark.png"
+            alt="microw"
+            title="micro.me"
+            width={48}
+            height={48}
+            className="block lg:hidden h-8 w-8 min-h-8 min-w-8"
+            priority
+          />
+          {/* Large: full logo */}
+          <Image
+            src="/brand/logo-large.png"
+            alt="Microw"
+            title="micro.me"
+            width={460}
+            height={380}
+            className="hidden lg:block h-12 w-auto shrink-0"
+            priority
+          />
+        </Link>
         </div>
 
         {/* Middle: auth / primary actions */}
         <nav className="flex flex-wrap items-center gap-4 text-sm">
-          <Link href="/login" className="hover:underline">Log in</Link>
-          <Link href="/signup" className="rounded-full border border-black/10 px-3 py-1 hover:bg-black/5">Sign up</Link>
+          <Link href="/admin/login" className="hover:underline">Log in</Link>
+          <Link href="/admin/signup" className="rounded-full border border-black/10 px-3 py-1 hover:bg-black/5">Get your microw.me/ now!</Link>
         </nav>
 
         {/* Right: legal */}
         <div className="text-xs text-black/60">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <Link href="/impressum" className="hover:underline">Impressum</Link>
-            <Link href="/privacy" className="hover:underline">Privacy</Link>
-            <Link href="/terms" className="hover:underline">Terms</Link>
+            <Link href="/home/impressum" className="hover:underline">Impressum</Link>
+            <Link href="/home/privacy" className="hover:underline">Privacy</Link>
+            <Link href="/home/terms" className="hover:underline">Terms</Link>
             <span>© {year} microw.me</span>
           </div>
         </div>
