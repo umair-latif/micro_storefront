@@ -5,103 +5,127 @@ import { useSearchParams } from "next/navigation"; // Client Component hook
 import { createClient } from "@/lib/supabase-client"; // Client-side Supabase client
 import { CheckCircle2, Loader2, Upload, Trash2 } from "lucide-react";
 
-// ❌ REMOVE: export const dynamic = 'force-dynamic'; 
-// This is only for Server Components and is not needed here.
-
 type SocialsConfig = {
-  instagram?: string | null;
-  tiktok?: string | null;
-  x?: string | null;           // twitter / X
-  facebook?: string | null;
-  etsy?: string | null;
-  amazon?: string | null;
-  youtube?: string | null;
+  instagram?: string | null;
+  tiktok?: string | null;
+  x?: string | null;            // twitter / X
+  facebook?: string | null;
+  etsy?: string | null;
+  amazon?: string | null;
+  youtube?: string | null;
 };
 
 type Profile = {
-  id: string;
-  slug: string;
-  display_name: string | null;
-  bio: string | null;
-  ig_handle: string | null;       // legacy
-  tt_handle: string | null;       // legacy
-  wa_e164: string | null;
-  profile_img: string | null;
-  header_img: string | null;
-  socials_config: SocialsConfig | null;
+  id: string;
+  slug: string;
+  display_name: string | null;
+  bio: string | null;
+  ig_handle: string | null;       // legacy
+  tt_handle: string | null;       // legacy
+  wa_e164: string | null;
+  profile_img: string | null;
+  header_img: string | null;
+  socials_config: SocialsConfig | null;
+  owner_uid?: string | null;      // 🔒 include owner to verify ownership
 };
 
-// 1. ❌ REMOVE 'async' keyword
 export default function ProfilePage() {
-    // 2. ✅ Instantiate client inside the function body
-    const supabase = createClient();
-    const search = useSearchParams();
-    const store = (search.get("store") ?? "").trim() || null;
+  const supabase = createClient();
+  const search = useSearchParams();
+  const store = (search.get("store") ?? "").trim() || null;
 
-    const [loading, setLoading] = useState(true);
-    const [saving, startSaving] = useTransition();
-    const [saved, setSaved] = useState(false);
-    const [profile, setProfile] = useState<Profile | null>(null);
-    const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, startSaving] = useTransition();
+  const [saved, setSaved] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null); // 🔒 current user id
+  const [notOwner, setNotOwner] = useState(false);           // 🔒 ownership gate
 
-    // file inputs for avatar & cover
-    const avatarInputRef = useRef<HTMLInputElement>(null);
-    const coverInputRef = useRef<HTMLInputElement>(null);
-    const [uploadingAvatar, setUploadingAvatar] = useState(false);
-    const [uploadingCover, setUploadingCover] = useState(false);
-    const [deletingAvatar, setDeletingAvatar] = useState(false);
-    const [deletingCover, setDeletingCover] = useState(false);
+  // file inputs for avatar & cover
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [deletingAvatar, setDeletingAvatar] = useState(false);
+  const [deletingCover, setDeletingCover] = useState(false);
 
-    // ✅ Data fetching remains correctly inside useEffect
-    useEffect(() => {
-      let mounted = true;
-      (async () => {
-        if (!store) {
-          setProfile(null);
-          setLoading(false);
-          return;
-        }
-        setLoading(true);
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, slug, display_name, bio, ig_handle, tt_handle, wa_e164, profile_img, header_img, socials_config")
-          .or(`id.eq.${store},slug.eq.${store}`)
-          .maybeSingle();
+  // 🔒 resolve current user first
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
+      setUserId(data.user?.id ?? null);
+    });
+    return () => { mounted = false; };
+  }, [supabase]);
 
-        if (!mounted) return;
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!store) {
+        setProfile(null);
+        setLoading(false);
+        setNotOwner(false);
+        return;
+      }
+      setLoading(true);
 
-        if (error) {
-          console.error("profiles fetch error:", error);
-          setErr(error.message ?? "Failed to load profile.");
-          setProfile(null);
-        } else {
-          // ensure socials_config exists
-          const sc: SocialsConfig = {
-            instagram: data?.socials_config?.instagram ?? (data?.ig_handle ? `https://instagram.com/${data.ig_handle.replace(/^@/, "")}` : null),
-            tiktok: data?.socials_config?.tiktok ?? (data?.tt_handle ? `https://tiktok.com/@${data.tt_handle.replace(/^@/, "")}` : null),
-            x: data?.socials_config?.x ?? null,
-            facebook: data?.socials_config?.facebook ?? null,
-            etsy: data?.socials_config?.etsy ?? null,
-            amazon: data?.socials_config?.amazon ?? null,
-            youtube: data?.socials_config?.youtube ?? null,
-          };
-          setProfile({ ...(data as Profile), socials_config: sc });
-          setErr(null);
-        }
-        setLoading(false);
-      })();
-      return () => { mounted = false; };
-    }, [store, supabase]);
-    
-   const title = useMemo(
-      () => (profile?.display_name || profile?.slug ? `/${profile?.slug}` : ""),
-      [profile]
-    );
+      // 🔒 fetch owner_uid to verify ownership
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, slug, display_name, bio, ig_handle, tt_handle, wa_e164, profile_img, header_img, socials_config, owner_uid")
+        .or(`id.eq.${store},slug.eq.${store}`)
+        .maybeSingle();
 
-    function update<K extends keyof Profile>(key: K, value: Profile[K]) {
-      if (!profile) return;
-      setProfile({ ...profile, [key]: value });
-    }
+      if (!mounted) return;
+
+      if (error) {
+        console.error("profiles fetch error:", error);
+        setErr(error.message ?? "Failed to load profile.");
+        setProfile(null);
+        setNotOwner(false);
+      } else if (!data) {
+        setErr(null);
+        setProfile(null);
+        setNotOwner(false);
+      } else {
+        // 🔒 if logged in but not owner, block editing UI
+        if (userId && data.owner_uid && data.owner_uid !== userId) {
+          setProfile(null);
+          setNotOwner(true);
+          setErr(null);
+        } else {
+          // ensure socials_config exists
+          const sc: SocialsConfig = {
+            instagram: data?.socials_config?.instagram ?? (data?.ig_handle ? `https://instagram.com/${data.ig_handle.replace(/^@/, "")}` : null),
+            tiktok: data?.socials_config?.tiktok ?? (data?.tt_handle ? `https://tiktok.com/@${data.tt_handle.replace(/^@/, "")}` : null),
+            x: data?.socials_config?.x ?? null,
+            facebook: data?.socials_config?.facebook ?? null,
+            etsy: data?.socials_config?.etsy ?? null,
+            amazon: data?.socials_config?.amazon ?? null,
+            youtube: data?.socials_config?.youtube ?? null,
+          };
+          setProfile({ ...(data as Profile), socials_config: sc });
+          setNotOwner(false);
+          setErr(null);
+        }
+      }
+      setLoading(false);
+    })();
+    // re-run when store or userId changes (ownership depends on userId)
+    return () => { mounted = false; };
+  }, [store, supabase, userId]);
+
+  const title = useMemo(
+    () => (profile?.display_name || profile?.slug ? `/${profile?.slug}` : ""),
+    [profile]
+  );
+
+  function update<K extends keyof Profile>(key: K, value: Profile[K]) {
+    if (!profile) return;
+    setProfile({ ...profile, [key]: value });
+  }
 
   function updateSocial(key: keyof SocialsConfig, value: string) {
     if (!profile) return;
@@ -131,7 +155,7 @@ export default function ProfilePage() {
   }
 
   function save() {
-    if (!profile) return;
+    if (!profile || !userId) return; // 🔒 require user and profile
     startSaving(async () => {
       setErr(null);
 
@@ -151,7 +175,8 @@ export default function ProfilePage() {
           header_img: profile.header_img,
           socials_config: profile.socials_config ?? {},
         })
-        .eq("id", profile.id);
+        .eq("id", profile.id)
+        .eq("owner_uid", userId as string); // 🔒 extra guard
 
       if (error) {
         console.error("profile update error:", error);
@@ -165,7 +190,7 @@ export default function ProfilePage() {
   }
 
   async function uploadToBucket(kind: "avatar" | "cover", file: File) {
-    if (!profile) return;
+    if (!profile || !userId) return; // 🔒 require user and ownership
     const setUploading = kind === "avatar" ? setUploadingAvatar : setUploadingCover;
     setUploading(true);
     try {
@@ -189,7 +214,8 @@ export default function ProfilePage() {
         .from("profiles")
         .update(patch)
         .eq("id", profile.id)
-        .select("id, slug, display_name, bio, ig_handle, tt_handle, wa_e164, profile_img, header_img, socials_config")
+        .eq("owner_uid", userId as string) // 🔒 extra guard
+        .select("id, slug, display_name, bio, ig_handle, tt_handle, wa_e164, profile_img, header_img, socials_config, owner_uid")
         .single();
 
       if (error) throw error;
@@ -203,7 +229,7 @@ export default function ProfilePage() {
   }
 
   async function deleteImage(kind: "avatar" | "cover") {
-    if (!profile) return;
+    if (!profile || !userId) return; // 🔒 require user and ownership
     const url = kind === "avatar" ? profile.profile_img : profile.header_img;
     if (!url) return;
 
@@ -224,7 +250,8 @@ export default function ProfilePage() {
         .from("profiles")
         .update(patch)
         .eq("id", profile.id)
-        .select("id, slug, display_name, bio, ig_handle, tt_handle, wa_e164, profile_img, header_img, socials_config")
+        .eq("owner_uid", userId as string) // 🔒 extra guard
+        .select("id, slug, display_name, bio, ig_handle, tt_handle, wa_e164, profile_img, header_img, socials_config, owner_uid")
         .single();
 
       if (error) throw error;
@@ -246,11 +273,20 @@ export default function ProfilePage() {
     );
   }
 
-  if (loading) {
+  if (loading || userId === null) {
     return (
       <div className="space-y-2">
         <h1 className="text-xl font-semibold">Store Profile</h1>
         <p className="text-sm text-neutral-600">Loading…</p>
+      </div>
+    );
+  }
+
+  if (notOwner) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-xl font-semibold">Store Profile</h1>
+        <p className="text-sm text-red-600">You do not have permission to edit this store.</p>
       </div>
     );
   }
@@ -319,7 +355,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="relative -mt-10 px-4 pb-4 sm:-mt-14 sm:px-6">
-          <div className="flex items-end gap-4">
+          <div className="flex items	end gap-4">
             <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl ring-2 ring-white sm:h-24 sm:w-24">
               {profile.profile_img ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -346,7 +382,6 @@ export default function ProfilePage() {
                 onClick={() => avatarInputRef.current?.click()}
                 disabled={uploadingAvatar}
                 title="Upload avatar"
-
                 className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-neutral-50 disabled:opacity-60"
               >
                 {uploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
@@ -356,7 +391,6 @@ export default function ProfilePage() {
                 onClick={() => deleteImage("avatar")}
                 disabled={!profile.profile_img || deletingAvatar}
                 title="Delete avatar"
-
                 className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-neutral-50 disabled:opacity-60"
               >
                 {deletingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
