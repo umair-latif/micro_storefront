@@ -11,3 +11,6 @@ html, body { margin: 0; padding: 0; background:#f9fafb; color:#111827; }
 .no-scrollbar::-webkit-scrollbar {
   display: none;             /* Chrome/Safari */
 }
+.bg-gradient-rose {
+  @apply bg-gradient-to-r from-[#E897B0] via-[#F578BF] to-[#A4A5F5];
+}
