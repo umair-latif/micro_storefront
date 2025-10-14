@@ -34,7 +34,7 @@ export default function SiteFooter() {
         {/* Middle: auth / primary actions */}
         <nav className="flex flex-wrap items-center gap-4 text-sm">
           <Link href="/admin/login" className="hover:underline">Log in</Link>
-          <Link href="/admin/signup" className="rounded-full border border-black/10 px-3 py-1 hover:bg-black/5">Get your microw.me/ now!</Link>
+          <Link href="/admin/login" className="rounded-full border border-black/10 px-3 py-1 hover:bg-black/5">Get your microw.me/ now!</Link>
         </nav>
 
         {/* Right: legal */}
