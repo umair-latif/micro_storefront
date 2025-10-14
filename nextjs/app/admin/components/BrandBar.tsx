@@ -11,8 +11,16 @@ import NewStoreButton from "@/app/admin/profile/ui/NewStoreButton";
 import { useMedia } from "@/lib/useMedia";
 
 export default function BrandBar() {
-  const search = useSearchParams();
-  const { toggleDrawer } = useDrawer();
+const search = useSearchParams();
+const { toggleDrawer } = useDrawer();
+const [isAuthed, setIsAuthed] = useState(false);
+const supabase = useMemo(() => createClient(), []);
+useEffect(() => {
+let m = true;
+supabase.auth.getUser().then(({ data }) => m && setIsAuthed(!!data.user));
+const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => m && setIsAuthed(!!s?.user));
+return () => { m = false; sub?.subscription?.unsubscribe?.(); };
+}, [supabase]);
 
   // ✅ Wide if viewport ≥ 768px (desktop/tablet)
   const isWide = useMedia("(min-width: 768px)", true);
