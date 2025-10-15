@@ -87,7 +87,7 @@ export default function WordImageSlider() {
         {/* Image Gallery Slider */}
         <div className="flex flex-col items-center mb-6">
           {/* WINDOW */}
-          <div className={`relative w-full max-w-5xl h-[40rem] overflow-hidden rounded-2xl bg-gradient-rose md:bg-black/10 p-4 md:p-6 shadow-xl`}>
+          <div className={`relative w-full max-w-5xl min-h-[15rem] h-full max-h-[40rem] overflow-hidden rounded-2xl bg-gradient-rose md:bg-black/10 p-4 md:p-6 shadow-xl`}>
             {/* ROW: no absolute positioning -> no overlap */}
             <div className="flex w-full h-full items-center justify-center gap-4 md:gap-8">
               {/* LEFT (slightly smaller, clickable) */}
