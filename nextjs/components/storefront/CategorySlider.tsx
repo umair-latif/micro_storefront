@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import * as React from "react";
 
 type Category = { id: string | number; name: string; cover_img?: string | null };
+type CategoryNavStyle = "auto" | "chips" | "pills" | "square";
 
 function hexToRgba(hex?: string, a = 1, fallback = "#111111") {
   const h = (hex || fallback).replace("#", "");
@@ -16,33 +17,79 @@ function hexToRgba(hex?: string, a = 1, fallback = "#111111") {
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
+function resolveStyle(
+  themeVariant?: "clean" | "bold" | "minimal",
+  style?: CategoryNavStyle
+): Exclude<CategoryNavStyle, "auto"> {
+  if (style && style !== "auto") return style;
+  switch (themeVariant) {
+    case "bold":
+      return "chips";
+    case "minimal":
+      return "square";
+    case "clean":
+    default:
+      return "pills";
+  }
+}
+
 export default function CategorySlider({
   categories,
   activeId,
   basePath,
+  categoryBasePath,
   theme,
+  style = "auto", // explicit override wins
 }: {
   categories: Category[];
   activeId: string | number;
-  basePath: string;
+  basePath: string; // `/${slug}`
+  categoryBasePath?: string; // `/${slug}/c`
   theme: any; // resolved theme from getThemeFromConfig
+  style?: CategoryNavStyle; // "auto" | "chips" | "pills" | "square"
 }) {
   const search = useSearchParams();
   const paramsBase = new URLSearchParams(search.toString());
 
-  // normalize theme bits + CSS vars for reliable hover/active styles
+  // 1) Figure out the theme variant and tokens robustly
   const variant: "clean" | "bold" | "minimal" =
     (theme?.variant as any) || "clean";
 
-  const primary = theme?.primary || theme?.accent || "#111111";
-  const accent = theme?.accent || theme?.primary || "#4b5563";
-  const text = theme?.text || "#111111";
-  const surface = theme?.surface || "#ffffff";
+  const primary =
+    theme?.palette?.primary ??
+    theme?.palette?.accent ??
+    theme?.primary ??
+    theme?.accent ??
+    "#111111";
+
+  const accent =
+    theme?.palette?.accent ??
+    theme?.palette?.primary ??
+    theme?.accent ??
+    theme?.primary ??
+    "#4b5563";
+
+  const text =
+    theme?.palette?.text ??
+    theme?.text ??
+    "#111111";
+
+  const surface =
+    theme?.palette?.surface ??
+    theme?.surface ??
+    "#ffffff";
+
   const border = "rgba(0,0,0,.08)";
 
+  // 2) Resolve the style (prop wins, else variant)
+  const resolvedStyle = React.useMemo(
+    () => resolveStyle(variant, style),
+    [variant, style]
+  );
+
+  // 3) CSS variables for consistent hover/active styles
   const cssVars: React.CSSProperties = {
-    // use CSS vars so we don't fight Tailwind's hover classes
-    // @ts-ignore
+    // @ts-ignore custom CSS vars
     "--sf-text": text,
     "--sf-surface": surface,
     "--sf-border": border,
@@ -52,69 +99,28 @@ export default function CategorySlider({
 
   return (
     <div
-      className="sticky top-0 z-10 -mx-4 mb-4 border-b border-black/5 bg-white/70 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/50"
+      className="sticky top-0 z-10 -mx-4 mb-4 border-b border-black/5 bg-black/0 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-black/0"
       style={cssVars}
     >
       <div className="no-scrollbar flex gap-2 overflow-x-auto py-0.5">
         {categories.map((c) => {
           const isActive = String(c.id) === String(activeId);
-          const params = new URLSearchParams(paramsBase.toString());
-          params.set("cat", String(c.id));
-          const href = `${basePath}?${params.toString()}`;
 
-          /** ---------- BOLD: “stories”-like discs ---------- */
-          if (variant === "bold") {
-            const ringColor = isActive ? "ring-[var(--sf-primary)]/70" : "ring-black/10";
-            const outerGrad = `linear-gradient(135deg, ${primary} 0%, ${accent} 100%)`;
-            return (
-              <Link
-                key={c.id}
-                href={href}
-                prefetch={false}
-                aria-current={isActive ? "page" : undefined}
-                className="group inline-flex flex-col items-center gap-1.5 px-1.5"
-                title={c.name}
-              >
-                <span
-                  className={`relative inline-flex h-16 w-16 items-center justify-center rounded-full p-[2px] ring-2 transition-shadow ${ringColor} group-hover:ring-[var(--sf-primary)]/80`}
-                  style={{ background: outerGrad }}
-                >
-                  <span className="inline-flex h-full w-full items-center justify-center rounded-full bg-white p-[3px]">
-                    <span className="relative h-full w-full overflow-hidden rounded-full bg-neutral-100 transition-transform group-hover:scale-[1.02]">
-                      {c.cover_img ? (
-                        <Image
-                          src={c.cover_img}
-                          alt={c.name}
-                          fill
-                          className="object-cover"
-                          sizes="64px"
-                        />
-                      ) : (
-                        <span
-                          className="absolute inset-0"
-                          style={{
-                            background: `linear-gradient(135deg, ${hexToRgba(
-                              primary,
-                              0.3
-                            )}, ${hexToRgba(accent, 0.3)})`,
-                          }}
-                        />
-                      )}
-                    </span>
-                  </span>
-                </span>
-                <span
-                  className="line-clamp-1 w-20 text-center text-xs"
-                  style={{ color: "var(--sf-text)" }}
-                >
-                  {c.name}
-                </span>
-              </Link>
-            );
+          // Build href:
+          const idStr = String(c.id);
+          let href: string;
+          if (idStr.toLowerCase() === "all") {
+            href = basePath; // landing
+          } else if (categoryBasePath) {
+            href = `${categoryBasePath}/${encodeURIComponent(idStr)}`; // /slug/c/id
+          } else {
+            const params = new URLSearchParams(paramsBase.toString());
+            params.set("cat", idStr);
+            href = `${basePath}?${params.toString()}`; // legacy fallback
           }
 
-          /** ---------- MINIMAL: rounded squares ---------- */
-          if (variant === "minimal") {
+          // ---------- SQUARE (minimal) ----------
+          if (resolvedStyle === "square") {
             return (
               <Link
                 key={c.id}
@@ -125,7 +131,7 @@ export default function CategorySlider({
                   "inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm transition",
                   "border",
                   isActive
-                    ? "border-[var(--sf-primary)]/40 bg-[var(--sf-primary)]/5"
+                    ? "border-[var(--sf-primary)]/40 bg-[var(--sf-primary)]/6"
                     : "border-[var(--sf-border)] hover:bg-black/5",
                 ].join(" ")}
                 style={{ color: "var(--sf-text)", background: "var(--sf-surface)" }}
@@ -135,7 +141,29 @@ export default function CategorySlider({
             );
           }
 
-          /** ---------- CLEAN (default): pills with clear active/hover ---------- */
+          // ---------- CHIPS (bold) ----------
+          if (resolvedStyle === "chips") {
+            return (
+              <Link
+                key={c.id}
+                href={href}
+                prefetch={false}
+                aria-current={isActive ? "page" : undefined}
+                className={[
+                  "inline-flex items-center rounded-xl px-3 py-2 text-sm transition border",
+                  isActive
+                    ? "border-[var(--sf-primary)]/50 bg-[var(--sf-primary)]/10 shadow-sm"
+                    : "border-[var(--sf-border)] bg-[var(--sf-surface)] hover:bg-black/5 hover:shadow",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sf-primary)]/40",
+                ].join(" ")}
+                style={{ color: "var(--sf-text)" }}
+              >
+                {c.name}
+              </Link>
+            );
+          }
+
+          // ---------- PILLS (clean / default) ----------
           return (
             <Link
               key={c.id}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { type Category } from "@/lib/types";
 
 export default function CategoryCard({ cat, basePath, theme }: { cat: Category; basePath: string; theme: any }) {
-  const href = `${basePath}?cat=${cat.id}`;
+  const href = `${basePath}/c/${cat.id}`;
   return (
     <Link href={href} className={`${theme.card} overflow-hidden p-3 hover:shadow-md`}>
       <div className="relative mb-3 aspect-[4/3] w-full overflow-hidden rounded-xl bg-black/5">

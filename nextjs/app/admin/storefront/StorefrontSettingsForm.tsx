@@ -1,8 +1,6 @@
 "use client";
 
 import { useTransition } from "react";
-import { saveStorefrontConfig } from "./actions";
-
 export default function StorefrontSettingsForm({
   profileId,
   current,
@@ -35,12 +33,6 @@ export default function StorefrontSettingsForm({
       landing: form.get("landing") as any,
       view: form.get("view") as any,
     };
-    
-    start(async () => {
-      await saveStorefrontConfig(input);
-      // optional toast
-      alert("Saved!");
-    });
   }
 
   return (

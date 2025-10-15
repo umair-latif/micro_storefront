@@ -1,76 +1,69 @@
-// app/admin/storefront/page.tsx
-import { DEFAULT_STOREFRONT_CONFIG } from "@/lib/defaults";
-import type { StorefrontConfig } from "@/lib/types";
-import { createServerSupabase } from "@/lib/supabase-ssr-server";
-import { Suspense } from "react";
-import StorefrontSettings from "./ui/StorefrontSettings";
-// import { notFound } from "next/navigation"; // optional
+import { createSupabaseServerClient } from "@/lib/supabase-server"; // your SSR client
+import ThemeEditor from "./ui/ThemeEditor";
+import type { StorefrontTheme } from "@/lib/types";
+import { notFound } from "next/navigation";
+import LandingEditor from "./ui/LandingEditor";
 
-export const dynamic = "force-dynamic"; // ensure fresh data (or: export const revalidate = 0)
 
-async function fetchProfileWithConfig(store: string | null) {
-  if (!store) return null;
+export const dynamic = "force-dynamic";
 
- const supabase = createServerSupabase();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, slug, display_name, storefront_config")
-    .or(`id.eq.${store},slug.eq.${store}`)
-    .maybeSingle();
-
-  if (error) {
-    // You could log this server-side
-    return null; // or throw new Error(error.message)
+export default async function StorefrontPage({ searchParams }: { searchParams: { store?: string } }) {
+  const supabase = createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    // Middleware should redirect, but be safe
+    notFound();
   }
 
-  // Merge defaults with stored config (prefer stored keys)
-  const merged: StorefrontConfig = {
-    ...DEFAULT_STOREFRONT_CONFIG,
-    ...(data?.storefront_config ?? {}),
-  };
-
-  return { profile: data, config: merged } as const;
-}
-
-export default async function StorefrontPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
-  const store = (searchParams?.store as string) ?? null;
-  const result = await fetchProfileWithConfig(store);
-
-  if (!result?.profile) {
-    // optionally: if (store) notFound();
+  const store = (searchParams.store ?? "").trim();
+  if (!store) {
     return (
       <div className="space-y-2">
         <h1 className="text-xl font-semibold">Storefront</h1>
-        <p className="text-sm text-neutral-600">
-          Select a store from the top bar to configure its storefront.
-        </p>
+        <p className="text-sm text-neutral-600">Select a store from the top bar to configure its storefront.</p>
       </div>
     );
   }
 
+  // fetch the profile by id or slug BUT owned by current user
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("id, owner_uid, storefront_config")
+    .or(`id.eq.${store},slug.eq.${store}`)
+    .eq("owner_uid", user.id)
+    .maybeSingle();
+
+  if (error) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-xl font-semibold">Storefront</h1>
+        <p className="text-sm text-red-600">Failed to load store: {error.message}</p>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-xl font-semibold">Storefront</h1>
+        <p className="text-sm text-red-600">Store “{store}” not found, or you don’t have permission.</p>
+      </div>
+    );
+  }
+
+  const initialTheme: StorefrontTheme | undefined = profile.storefront_config?.theme;
+  const initialBlocks = profile.storefront_config?.landing_blocks ?? [
+  { type: "hero", show_avatar: true, show_socials: true, show_ctas: true },
+  { type: "categories", show: !!profile.storefront_config?.show_categories, style: "chips" },
+  { type: "products", source: "all", view: "grid_3" as const, show_price: true },
+];
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">Storefront</h1>
-          <p className="text-sm text-neutral-600">
-            Configure how your products are displayed on /{result.profile.slug}
-          </p>
-        </div>
-      </div>
-
-      <Suspense fallback={<div className="text-sm text-neutral-500">Loading settings…</div>}>
-        {/* Client component that handles saving to Supabase */}
-        <StorefrontSettings
-          profileId={result.profile.id}
-          slug={result.profile.slug}
-          initialConfig={result.config}
-        />
-      </Suspense>
+       <LandingEditor
+      profileId={profile.id}
+      initialBlocks={initialBlocks}
+    />
+      <ThemeEditor profileId={profile.id} initialTheme={initialTheme} />
     </div>
   );
 }
