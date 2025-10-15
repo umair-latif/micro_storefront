@@ -1,95 +1,72 @@
-// actions.ts
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerSupabase } from "@/lib/supabase-ssr-server";
+import type { StorefrontTheme,LandingBlock } from "@/lib/types";
 
+type Result = { ok: true } | { ok: false; error: string };
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+export async function updateThemeAction(profileId: string, nextTheme: StorefrontTheme): Promise<Result> {
+  try {
+    const supabase = createServerSupabase();
 
+    // who’s logged in?
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok: false, error: "Not authenticated." };
 
-function createSupabase() {
-  // Ensure 'url' and 'anon' are defined/imported from where your Supabase details live
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    // merge theme into storefront_config JSONB
+    // Using a safe read-modify-write to preserve other keys in storefront_config
+    const { data: current, error: readErr } = await supabase
+      .from("profiles")
+      .select("id, owner_uid, storefront_config")
+      .eq("id", profileId)
+      .maybeSingle();
 
-  const cookieStore = cookies();
+    if (readErr) return { ok: false, error: readErr.message };
+    if (!current) return { ok: false, error: "Profile not found." };
+    if (current.owner_uid && current.owner_uid !== user.id) {
+      return { ok: false, error: "You do not have permission to update this store." };
+    }
 
-  // The cookie adapter remains correct after the previous fix
-  const cookieAdapter: any = {
-    get: (name: string) => cookieStore.get(name)?.value,
-    set: (name: string, value: string, options: CookieOptions) =>
-      cookieStore.set({ name, value, ...options }),
-    remove: (name: string, options: CookieOptions) =>
-      cookieStore.set({ name, value: "", ...options, expires: new Date(0) }),
-    getAll: () => cookieStore.getAll().map(({ name, value }) => ({ name, value })),
-    setAll: (list: any[]) => list.forEach((x) => cookieStore.set(x)),
-  };
+    const cfg = current.storefront_config ?? {};
+    const merged = { ...cfg, theme: nextTheme };
 
-  return createServerClient(url, anon, {
-    cookies: cookieAdapter,
-  });
+    const { error: writeErr } = await supabase
+      .from("profiles")
+      .update({ storefront_config: merged })
+      .eq("id", profileId)
+      .eq("owner_uid", user.id); // extra guard
+
+    if (writeErr) return { ok: false, error: writeErr.message };
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? "Unknown error" };
+  }
 }
 
-// ⚠️ UPDATED: The type now reflects ALL fields passed from the form.
-type Payload = {
-  profileId: string;
-  variant: "clean" | "bold" | "minimal"; // from form
-  preset: string; // from form
-  primary: string; // from form
-  accent: string; // from form
-  landing: "products" | "categories" | "hero-only"; // from form
-  view: "grid" | "list" | "links"; // from form
-};
+export async function updateLandingBlocks(profileId: string, blocks: LandingBlock[]) {
+  const supabase = createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated." };
 
-// 1️⃣ RENAME: saveLandingAndLayout -> saveStorefrontConfig
-export async function saveStorefrontConfig(input: Payload) {
-  const supabase = createSupabase();
+  const { data: current, error: readErr } = await supabase
+    .from("profiles")
+    .select("id, owner_uid, storefront_config")
+    .eq("id", profileId)
+    .maybeSingle();
 
-  // ⚠️ NOTE: You'll need the profile's 'slug' to call revalidatePath correctly.
-  // For now, I'll assume you have a way to retrieve it, or you'll pass it in the payload.
-  // Since it's not in the form, we'll fetch it along with the config.
+  if (readErr) return { ok: false, error: readErr.message };
+  if (!current) return { ok: false, error: "Profile not found." };
+  if (current.owner_uid !== user.id) return { ok: false, error: "Forbidden." };
 
-  // get existing config to merge
-  const { data: row, error: readErr } = await supabase
-    .from("profiles")
-    .select("storefront_config, slug") // <-- Also fetch 'slug'
-    .eq("id", input.profileId)
-    .maybeSingle();
-  if (readErr) throw readErr;
-  if (!row) throw new Error("Profile not found.");
+  const cfg = current.storefront_config ?? {};
+  const merged = { ...cfg, landing_blocks: blocks };
 
-  const existing = (row.storefront_config ?? {}) as any;
+  const { error: writeErr } = await supabase
+    .from("profiles")
+    .update({ storefront_config: merged })
+    .eq("id", profileId)
+    .eq("owner_uid", user.id);
 
-  // 2️⃣ UPDATE MERGE LOGIC: Merge all new fields, including theme variants/presets
-  const nextCfg = {
-    ...existing,
-    theme: {
-      // Merge existing theme config with new theme data
-      ...(existing.theme ?? {}), 
-      variant: input.variant,
-      palette: {
-        preset: input.preset,
-        primary: input.primary,
-        accent: input.accent,
-      }
-    },
-    display_mode: input.view, 
-    landing_page: input.landing, 
-  };
-
-  const { error: writeErr } = await supabase
-    .from("profiles")
-    .update({ storefront_config: nextCfg })
-    .eq("id", input.profileId)
-    .select()
-    .single();
-
-  if (writeErr) throw writeErr;
-
-  // Revalidate the public page using the fetched slug
-  revalidatePath(`/${row.slug}`);
-  return { ok: true };
+  if (writeErr) return { ok: false, error: writeErr.message };
+  return { ok: true };
 }

@@ -12,6 +12,7 @@ export default function HeroOnly({
   socials,
   whatsapp,
   theme,
+  dense,
 }: {
   coverUrl?: string | null;
   avatarUrl?: string | null;
@@ -20,6 +21,7 @@ export default function HeroOnly({
   socials: SocialsConfig | null;
   whatsapp?: string | null;
   theme: any;
+  dense?:boolean|null;
 }) {
   return (
     <section className="relative flex h-screen w-full items-center justify-center overflow-hidden text-center">
@@ -38,9 +40,9 @@ export default function HeroOnly({
           )}
         </div>
         <h1 className="text-3xl font-semibold" style={{ color: theme.heroText }}>{title}</h1>
-        {bio ? <p className="mt-2 text-base" style={{ color: "rgba(255,255,255,0.85)" }}>{bio}</p> : null}
+        {bio ? <p className="mt-2 text-base" style={{ color: theme.mutedColor }}>{bio}</p> : null}
         <div className="mt-4 flex justify-center">
-          <SocialLinks socials={socials} mutedColor="rgba(255,255,255,0.85)" />
+          <SocialLinks socials={socials} mutedColor={theme.mutedColor} accentColor={theme.accent}/>
         </div>
         <div className="mt-6">
           <CTAButtons

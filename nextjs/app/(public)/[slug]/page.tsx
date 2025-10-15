@@ -4,23 +4,24 @@ export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 import type { Metadata, ResolvingMetadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { getThemeFromConfig } from "@/lib/theme";
+import { getThemeFromConfig, resolveCategoryNavStyle } from "@/lib/theme";
 import {
   type StorefrontConfig,
   type Product,
   type Category,
   type SocialsConfig,
+  type LandingBlock,
+  type GridMode,
 } from "@/lib/types";
 import ProductViews from "@/components/storefront/ProductViews";
 import HeroOnly from "@/components/storefront/HeroOnly";
 import CategoryListView from "@/components/storefront/CategoryListView";
 import CategorySlider from "@/components/storefront/CategorySlider";
-import Probe from "@/components/dev/Probe";
 import StorefrontHeader from "@/components/storefront/StorefrontHeader";
 
+/* ---------------------------------- Types --------------------------------- */
 
 type Profile = {
   id: string;
@@ -38,6 +39,29 @@ function getTitle(p: Profile) {
   return p.display_name || "Profile";
 }
 
+/* ----------------------- Legacy → Blocks Fallback ------------------------- */
+
+function toBlocks(cfg: StorefrontConfig | null | undefined): LandingBlock[] {
+  const c = cfg ?? {};
+  if (Array.isArray(c.landing_blocks) && c.landing_blocks.length > 0) {
+    return c.landing_blocks as LandingBlock[];
+  }
+
+  // Legacy fields → sensible default blocks
+  const hero: LandingBlock = { type: "hero", show_avatar: true, show_socials: true, show_ctas: true };
+  const legacyLanding = (c.landing_page as any) ?? "products";
+
+  if (legacyLanding === "hero-only") return [hero];
+
+  // default products
+  return [
+    hero,
+    { type: "products", source: "all", view: ((c.display_mode as GridMode) ?? "grid_3"), show_price: true },
+  ];
+}
+
+/* --------------------------- Metadata (public) ---------------------------- */
+
 export async function generateMetadata(
   { params }: { params: { slug: string } },
   _parent: ResolvingMetadata
@@ -45,14 +69,12 @@ export async function generateMetadata(
   const supabase = createSupabaseServerClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select(
-      "id, slug, display_name, bio, profile_img, header_img, storefront_config, is_public"
-    )
+    .select("id, slug, display_name, bio, profile_img, header_img, storefront_config, is_public")
     .eq("slug", params.slug)
-    .is("is_public", true)
+    .eq("is_public", true)
     .maybeSingle();
 
-  const title = profile ?.display_name ?? "Storefront";
+  const title = profile?.display_name ?? "Storefront";
   const description = (profile as any)?.bio ?? "Discover products and links";
   const cover = (profile as any)?.header_img ?? "/og-default.jpg";
 
@@ -64,46 +86,37 @@ export async function generateMetadata(
   };
 }
 
+/* ------------------------------- Page ------------------------------------- */
+
 export default async function StorefrontPage({
-  params,
-  searchParams,
+  params,
+  searchParams,
 }: {
-  params: { slug: string };
-  searchParams: { view?: "grid" | "list" | "links"; cat?: string };
+  params: { slug: string };
+  searchParams: { view?: "grid" | "list" | "links"; cat?: string };
 }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerClient();
 
-  // --- MODIFICATION: Use one robust fetch that selects all fields ---
-  // Note: We use the * to ensure we get a result if a single column is causing an issue.
-  const { data: pFull } = await supabase
-    .from("profiles")
-    .select("*") // Select all columns for robustness
-    .eq("slug", params.slug)
-    .is("is_public", true)
-    .maybeSingle();
+  // Robust profile fetch
+  const { data: pFull } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("slug", params.slug)
+    .eq("is_public", true)
+    .maybeSingle();
 
-  // 🔍 Debug logs (pFull is now the main variable)
-  console.log("[Storefront] slug:", params.slug);
-  console.log("[Storefront] storefront_config (FULL row):", pFull?.storefront_config);
-  console.log("[Storefront] id/slug:", pFull?.id, pFull?.slug); // This is what is now succeeding
+  if (!pFull) {
+    return (
+      <main className="mx-auto max-w-2xl p-6 text-center">
+        <h1 className="text-2xl font-semibold">Storefront not found</h1>
+        <p className="mt-2 text-muted-foreground">Check the URL or contact the owner.</p>
+      </main>
+    );
+  }
 
-  // --- MODIFICATION: Check pFull instead of p ---
-  if (!pFull) { // Check pFull, which is your successful query result
-    return (
-      <main className="mx-auto max-w-2xl p-6 text-center">
-        <h1 className="text-2xl font-semibold">Storefront not found</h1>
-        <p className="mt-2 text-muted-foreground">
-          Check the URL or contact the owner.
-        </p>
-      </main>
-    );
-  }
+  const p = pFull as unknown as Profile;
 
-  // --- MODIFICATION: Rename pFull to p for the rest of the file's consistency ---
-  const p = pFull as unknown as Profile; // Cast the successful result to your Profile type for downstream use
-
-
-  // --- BEGIN robust config parsing + debug ---
+  // Parse storefront_config (string or object)
   const rawCfg = (p as any).storefront_config ?? {};
   let cfgObj: any = rawCfg;
   if (typeof rawCfg === "string") {
@@ -114,144 +127,195 @@ export default async function StorefrontPage({
       cfgObj = {};
     }
   }
-  console.log("[Storefront] storefront_config (parsed):", cfgObj);
 
+  // Normalize legacy keys → StorefrontConfig
   const cfg: StorefrontConfig = {
     ...cfgObj,
     theme: cfgObj.theme ?? undefined,
-    display_mode: cfgObj.display_mode ?? cfgObj.display_mode ?? cfgObj.view ?? undefined,
+    display_mode: cfgObj.display_mode ?? cfgObj.view ?? undefined,
     show_categories: cfgObj.show_categories ?? cfgObj.showCategories ?? undefined,
     landing_page: (cfgObj.landing_page ?? cfgObj.landingPage ?? cfgObj.landing) ?? undefined,
   };
 
+  // Resolve theme
   const theme = getThemeFromConfig(cfg);
 
-  const activeCatId = searchParams.cat || "all";
-  const landingRaw = cfg.landing_page ?? "products";
-  const landing = activeCatId !== "all" ? "products" : landingRaw;
-    
-  const urlView = (searchParams.view as string | undefined) ?? undefined;
-  const view = (urlView ?? cfg.display_mode ?? "grid") as "grid" | "list" | "links";
+  // Build blocks (landing_blocks or legacy fallback)
+  const blocks = toBlocks(cfg);
 
-  // used by slider
-  const showCategoriesSlider = !!cfg.show_categories;
-
-  // For Probe (optional)
-  const cfgView = cfg.display_mode ?? null;
-  const effectiveView = view;
-
-  console.log("[Storefront] effective view:", view, "landing:", landing);
-  // --- END robust config parsing + debug ---
-
-  // fetch categories (for slider or categories landing)
+  // Fetch categories for blocks that need them
   const { data: categories = [] } = await supabase
     .from("categories")
     .select("id, name, position, cover_img")
     .eq("profile_id", p.id)
     .order("position", { ascending: true });
 
-  // fetch products (filtered by ?cat only when landing === "products")
-  //onst activeCatId = searchParams.cat || "all";
-  let q = supabase
+  // Fetch all visible products once
+  const { data: productsAll = [] } = await supabase
     .from("products")
     .select(
       "id, title, caption, price, thumb_url, visible, category_id, cta_label, cta_url, instagram_permalink, position"
     )
     .eq("profile_id", p.id)
-    .eq("visible", true);
+    .eq("visible", true)
+    .order("position", { ascending: true });
 
-  if (activeCatId !== "all") {
-    q = q.eq("category_id", activeCatId);
-  }
-  const { data: products = [] } = await q.order("position", { ascending: true });
+  // Build category → products map for any product blocks that target a specific category
+  const catIdsNeeded = Array.from(
+    new Set(
+      blocks
+        .filter((b) => b.type === "products" && typeof (b as any).source !== "string")
+        .map((b: any) => b.source?.category_id)
+        .filter(Boolean)
+    )
+  );
 
-  // header reused across products & categories landing
-const Header = (
-  <StorefrontHeader
-    displayName={p.display_name}
-    bio={p.bio}
-    avatarUrl={p.profile_img}
-    coverUrl={p.header_img}
-    socials={p.socials_config as SocialsConfig | null}
-    whatsapp={p.wa_e164}
-    theme={theme}  // from getThemeFromConfig(cfg)
-  />
-);
-
-  // Landing: Business card (hero only)
-  if (landing === "hero-only") {
-    return (
-      <main className={theme.wrapper} style={{ background: theme.background }}>
-        <HeroOnly
-          coverUrl={p.header_img}
-          avatarUrl={p.profile_img}
-          title={p.display_name}
-          bio={p.bio}
-          socials={p.socials_config as SocialsConfig | null}
-          whatsapp={p.wa_e164}
-          theme={theme}
-        />
-      </main>
-    );
+  const productsByCat: Record<string, Product[]> = {};
+  for (const cid of catIdsNeeded) {
+    productsByCat[cid] = (productsAll as Product[]).filter((pr) => pr.category_id === cid);
   }
 
-  // Landing: Categories directory (cards/list/links; cover_img supported)
-  if (landing === "categories") {
-    return (
-      <main className={theme.wrapper} style={{ background: theme.background }}>
-        <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
-          {Header}
-          <CategoryListView
-            categories={categories as Category[]}
-            view={view}
-            basePath={`/${p.slug}`}
-            theme={theme}
-          />
-        </div>
-      </main>
-    );
-  }
+  // Store header (used for non-hero-first pages)
+  const Header = (
+    <StorefrontHeader
+      displayName={p.display_name}
+      bio={p.bio}
+      avatarUrl={p.profile_img}
+      coverUrl={p.header_img}
+      socials={p.socials_config as SocialsConfig | null}
+      whatsapp={p.wa_e164}
+      theme={theme}
+    />
+  );
 
-  // Landing: Products (default) — optionally show the slider if checkbox is on
- return (
-  <main className={theme.wrapper} style={{ background: theme.background }}>
-    <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
-      {Header}
+  // Decide whether to show header separately (if first block is hero, we skip header duplication)
+  const firstIsHero = blocks[0]?.type === "hero";
 
-      {/* 👇 BACK LINK: only when viewing a filtered category */}
-      {activeCatId !== "all" && (
-        <div className="mb-4">
-          <Link
-            href={`/${p.slug}`}
-            className="text-sm underline-offset-4 hover:underline"
-            style={{ color: theme.muted }}
-          >
-            ← Back to home
-          </Link>
-        </div>
-      )}
+  return (
+    <main className={theme.wrapper} style={{ background: theme.background }}>
+      <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
+        {!firstIsHero ? Header : null}
 
-      {showCategoriesSlider && categories.length > 0 ? (
-        <CategorySlider
-          categories={[{ id: "all" as any, name: "All" }, ...categories] as any}
-          activeId={activeCatId}
-          basePath={`/${p.slug}`}
-          theme={theme}
-        />
-      ) : null}
+        {blocks.map((b, i) => {
+          if ((b as any)._hidden) return null;
 
-      {/* (optional) Probe */}
-      <Probe cfgView={cfgView} urlView={urlView ?? null} />
+          switch (b.type) {
+            case "hero":
+              return (
+                <section key={`b-${i}`} className={b.dense ? "mb-4" : "mb-8"}>
+                  <HeroOnly
+                    coverUrl={p.header_img}
+                    avatarUrl={p.profile_img}
+                    title={p.display_name}
+                    bio={p.bio}
+                    socials={p.socials_config as SocialsConfig | null}
+                    whatsapp={p.wa_e164}
+                    theme={theme}
+                    dense={b.dense}
+                  />
+                </section>
+              );
 
-      <ProductViews
-        products={products as any}
-        view={view}
-        theme={theme}
-        slug={p.slug}
-        whatsapp={p.wa_e164}
-        activeCatId={activeCatId}  // keeps the cat in product links
-      />
-    </div>
-  </main>
-);
+            case "categories_wall": {
+              const wallView = b.view ?? "grid";            // "grid" | "list" | "links"
+              const cols = b.columns ?? 3;                  // only used by grid
+              const items = (b.limit ? categories.slice(0, b.limit) : categories) as Category[];
+              return (
+                <section key={`b-${i}`} className="mb-6">
+                  <CategoryListView
+                    categories={items}
+                    view={wallView as any}
+                    basePath={`/${p.slug}`}
+                    theme={theme}
+                    columns={cols as any}
+                  />
+                </section>
+              );
+            }
+
+            case "products": {
+              const list =
+                b.source === "all"
+                  ? productsAll
+                  : productsByCat[(b.source as any).category_id] ?? [];
+
+              const limited = typeof b.limit === "number" ? (list as Product[]).slice(0, b.limit) : list;
+
+              // NEW: optional category navbar shown with products
+              const showNav = !!(b as any).show_category_nav;
+              const navStyle = resolveCategoryNavStyle(
+                cfg.theme?.variant as any,
+                (b as any).category_nav_style as any
+              );
+
+              return (
+                <section key={`b-${i}`} className="mb-6">
+                  {showNav && categories.length > 0 && (
+                    <div className="mb-4">
+                      <CategorySlider
+                        categories={[{ id: "all" as any, name: "All" }, ...categories] as any}
+                        activeId={"all"}
+                        basePath={`/${p.slug}`}           // landing for “All”
+                        categoryBasePath={`/${p.slug}/c`} // category pages
+                        theme={theme}
+                        style={navStyle as any}
+                      />
+                    </div>
+                  )}
+
+                  <ProductViews
+                    products={limited as any}
+                    view={b.view}
+                    theme={theme}
+                    slug={p.slug}
+                    whatsapp={p.wa_e164}
+                    // If ProductViews supports these toggles, keep them; otherwise remove.
+                    // showCaption={(b as any).show_caption}
+                    // showPrice={(b as any).show_price}
+                  />
+                </section>
+              );
+            }
+
+            case "products": {
+              const list =
+                b.source === "all"
+                  ? productsAll
+                  : productsByCat[(b.source as any).category_id] ?? [];
+
+              const limited =
+                typeof b.limit === "number" ? (list as Product[]).slice(0, b.limit) : list;
+
+              return (
+                <section key={`b-${i}`} className="mb-6">
+                  <ProductViews
+                    products={limited as any}
+                    view={b.view}
+                    theme={theme}
+                    slug={p.slug}
+                    whatsapp={p.wa_e164}
+                    // If ProductViews supports these, they’ll toggle UI; if not, remove them.
+                    //showCaption={b.show_caption}
+                    //showPrice={b.show_price}
+                  />
+                </section>
+              );
+            }
+
+            case "text":
+              return (
+                <section key={`b-${i}`} className={`my-4 ${b.align === "center" ? "text-center" : ""}`}>
+                  <div className="prose prose-neutral mx-auto">
+                    {b.content_md /* swap to markdown renderer if you have one */}
+                  </div>
+                </section>
+              );
+
+            default:
+              return null;
+          }
+        })}
+      </div>
+    </main>
+  );
 }

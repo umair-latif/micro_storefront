@@ -29,7 +29,6 @@ export type ResolvedTheme = {
 // This simplifies the definition of CLEAN, MINIMAL, etc.
 type BaseColorTokens = Omit<ResolvedTheme, "wrapper" | "card" | "button" | "chip" | "variant" | "primary" | "backgroundType">;
 
-
 /**
  * Ensures a color is a valid hex code, otherwise returns fallback.
  */
@@ -41,23 +40,23 @@ function clampHex(fallback: string | null, color?: string | null): string {
 
 // Clean presets (IG-like neutrals)
 const CLEAN: Record<string, BaseColorTokens> = {
-    default: { background:"#fafafa", surface:"#ffffff", text:"#111111", muted:"#6b7280", accent:"#111111" },
-    warm: 	 { background:"#fbf7f2", surface:"#ffffff", text:"#1a1a1a", muted:"#7a6a5a", accent:"#1a1a1a" },
-    cool: 	 { background:"#f5f7fb", surface:"#ffffff", text:"#121212", muted:"#62708a", accent:"#121212" },
+    default: { background:"#fafafa", surface:"#ffffff", text:"#111111", muted:"#6b7280", accent:"#6b7280" },
+    warm: 	 { background:"#fbf7f2", surface:"#ffffff", text:"#1a1a1a", muted:"#7a6a5a", accent:"#7a6a5a" },
+    cool: 	 { background:"#f5f7fb", surface:"#ffffff", text:"#121212", muted:"#62708a", accent:"#62708a" },
 };
 
 // Minimal presets (light/dark)
 const MINIMAL: Record<string, BaseColorTokens> = {
     light: { background:"#ffffff", surface:"#ffffff", text:"#0f172a", muted:"#64748b", accent:"#0f172a" },
-    dark: 	 { background:"#0b0f19", surface:"#0f1424", text:"#e5e7eb", muted:"#9aa4b2", accent:"#e5e7eb" },
+    dark: 	 { background:"#0b0f19", surface:"#0f1424", text:"#e5e7eb", muted:"#9aa4b2", accent:"#6b7280" },
 };
 
 // Bold derives from primary/accent (or named presets) - Needs explicit primary/accent fields
 // We define the key Primary/Accent colors, and let the base be CLEAN.default unless otherwise specified
 const BOLD_PRESETS: Record<string, { primary: string; accent: string; background?: string; surface?: string; text?: string; muted?: string }> = {
     sunset: { primary:"#ef4444", accent:"#f59e0b" },
-    ocean: 	{ primary:"#0ea5e9", accent:"#22c55e" },
-    forest: { primary:"#16a34a", accent:"#22d3ee" },
+    ocean: 	{ primary:"#0ea5e9", accent:"#22D3EE" },
+    forest: { primary:"#16a34a", accent:"#34D399" },
 };
 
 /**
@@ -90,6 +89,21 @@ function finalizeTokens(
     } as ResolvedTheme; 
 }
 
+export function resolveCategoryNavStyle(
+  themeVariant?: "clean" | "bold" | "minimal",
+  style?: "auto" | "chips" | "pills" | "square"
+) {
+  if (style && style !== "auto") return style;
+  switch (themeVariant) {
+    case "bold":
+      return "chips";
+    case "minimal":
+      return "square";
+    case "clean":
+    default:
+      return "pills";
+  }
+}
 
 export function getThemeFromConfig(cfg: StorefrontConfig): ResolvedTheme {
     const theme: StorefrontTheme | undefined = cfg.theme;
