@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState, useTransition, useRef, useEffect } from "react";
-import ThemeTab from "./ThemeTab"; // from canvas
-import type { StorefrontTheme } from "@/lib/types";
-import { updateThemeAction } from "../actions";
+import ThemeTab from "./ThemeTab";
+import type { StorefrontTheme, GridMode } from "@/lib/types";
+import { updateThemeAction, updateLandingOverridesAction } from "../actions"; // ← add this action
 import { CheckCircle2, Loader2, TriangleAlert } from "lucide-react";
 
 function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, ms: number) {
@@ -17,22 +17,46 @@ function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, ms: num
 export default function ThemeEditor({
   profileId,
   initialTheme,
+  initialCategoryPageView, // ← NEW (optional)
 }: {
   profileId: string;
   initialTheme?: StorefrontTheme;
+  initialCategoryPageView?: GridMode;
 }) {
-  const [theme, setTheme] = useState<StorefrontTheme>(initialTheme ?? { variant: "clean", palette: { preset: "default" } });
+  const [theme, setTheme] = useState<StorefrontTheme>(
+    initialTheme ?? { variant: "clean", palette: { preset: "default" } }
+  );
+  const [categoryPageView, setCategoryPageView] = useState<GridMode | undefined>(
+    initialCategoryPageView
+  );
+
   const [saving, startSaving] = useTransition();
   const [savedTick, setSavedTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  // optimistic update + debounced persist
-  const persist = useDebouncedCallback((next: StorefrontTheme) => {
+  // --- debounced persists ---
+  const persistTheme = useDebouncedCallback((next: StorefrontTheme) => {
     startSaving(async () => {
       setError(null);
       const res = await updateThemeAction(profileId, next);
-      if (!res.ok) {
-        //setError(res.error);
+      if (!res?.ok) {
+        setError('error' in res ? res.error : "Failed to save theme.");
+        return;
+      }
+
+      setSavedTick(Date.now());
+    });
+  }, 350);
+
+  const persistOverrides = useDebouncedCallback((nextView: GridMode | undefined) => {
+    startSaving(async () => {
+      setError(null);
+      // shape: { landing_overrides: { category_page_view?: GridMode } }
+      const res = await updateLandingOverridesAction(profileId, {
+        category_page_view: nextView,
+      });
+      if (!res?.ok) {
+        setError('error' in res ? res.error : "Failed to save landing overrides.");
         return;
       }
       setSavedTick(Date.now());
@@ -40,8 +64,13 @@ export default function ThemeEditor({
   }, 350);
 
   function onChange(next: StorefrontTheme) {
-    setTheme(next);     // optimistic
-    persist(next);      // debounced server write
+    setTheme(next);       // optimistic
+    persistTheme(next);   // debounced server write
+  }
+
+  function onSetCategoryPageView(next?: GridMode) {
+    setCategoryPageView(next); // optimistic
+    persistOverrides(next);    // debounced server write
   }
 
   // small UX flash “Saved”
@@ -74,7 +103,13 @@ export default function ThemeEditor({
         </div>
       </div>
 
-      <ThemeTab value={theme} onChange={onChange} />
+      <ThemeTab
+        value={theme}
+        onChange={onChange}
+        // ▼ Advanced: Category Page Product View (global override)
+        categoryPageView={categoryPageView}
+        onSetCategoryPageView={onSetCategoryPageView}
+      />
     </div>
   );
 }

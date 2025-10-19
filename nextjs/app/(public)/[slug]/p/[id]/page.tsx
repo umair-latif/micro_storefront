@@ -145,7 +145,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pa
             <div className="mt-4 flex flex-wrap gap-2">
               <CTAButtons
                 accent={theme.accent}
-                buttonClass={theme.button}
+                cfg={cfg}
                 whatsapp={(p.wa_e164 ?? undefined) as string | undefined}
                 instagramUrl={prod.instagram_permalink ?? undefined}
                 customLabel={prod.cta_label ?? undefined}

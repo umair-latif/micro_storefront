@@ -156,8 +156,8 @@ export default function ProductCard({
                 customUrl={hasProductCustomCta ? product.cta_url! : undefined}
                 accent={theme.accent}
                 // Styling for full-width/side-by-side
-                buttonClass="flex-1 text-center rounded-lg px-4 py-2 border-none shadow-md hover:shadow-lg transition-shadow"
-              />
+                themeVariant={theme.variant}              
+                />
             </div>
           )}
         </div>

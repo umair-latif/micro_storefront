@@ -12,8 +12,8 @@ import {
   SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy
 } from "@dnd-kit/sortable";
 
-import type { LandingBlock, GridMode, StorefrontTheme } from "@/lib/types";
-import { updateLandingBlocks } from "../actions";
+import type { LandingBlock, GridMode } from "@/lib/types";
+import { updateLandingBlocks, /* NEW: */ updateTopSection } from "../actions"; // ← add updateTopSection on server
 import { SortableItem } from "./_dnd/SortableItem";
 
 // ---------- curated presets (one-click) ----------
@@ -45,6 +45,12 @@ export const LANDING_PRESETS: Array<{ id: string; name: string; blocks: LandingB
   },
 ];
 
+// Local type for top-of-page config (mirrors cfg.top_section)
+type TopSection = {
+  mode?: "header" | "hero";
+  header_style?: "small" | "large-square" | "large-circle";
+};
+
 // ---------- tiny debounce ----------
 function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, ms: number) {
   const ref = useRef<number | null>(null);
@@ -58,30 +64,58 @@ function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, ms: num
 export default function LandingEditor({
   profileId,
   initialBlocks,
+  initialTopSection, // ← NEW
 }: {
   profileId: string;
   initialBlocks: LandingBlock[];
+  initialTopSection?: TopSection;
 }) {
   const [blocks, setBlocks] = useState<LandingBlock[]>(initialBlocks ?? []);
+  const [topSection, setTopSection] = useState<TopSection>(initialTopSection ?? { mode: "header", header_style: "small" });
+
   const [saving, startSaving] = useTransition();
   const [savedTick, setSavedTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   // persist (debounced) when blocks change
-  const persist = useDebouncedCallback((next: LandingBlock[]) => {
+  const persistBlocks = useDebouncedCallback((next: LandingBlock[]) => {
     startSaving(async () => {
       setError(null);
       const res = await updateLandingBlocks(profileId, next);
-      if (!res.ok) { setError(res.error); return; }
+     if (!res.ok) {
+        setError('error' in res ? res.error : 'Failed to save landing blocks.');
+        return;
+      }
+      setSavedTick(Date.now());
+    });
+  }, 400);
+
+  // NEW: persist (debounced) top section
+  const persistTop = useDebouncedCallback((next: TopSection) => {
+    startSaving(async () => {
+      setError(null);
+      // server action expects: { mode?: "header"|"hero", header_style?: "small"|"large-square"|"large-circle" }
+      const res = await updateTopSection(profileId, next);
+      if (!res.ok) {
+        setError('error' in res ? res.error : 'Failed to save top section.');
+        return;
+      }
       setSavedTick(Date.now());
     });
   }, 400);
 
   useEffect(() => { if (initialBlocks) setBlocks(initialBlocks); }, [initialBlocks]);
+  useEffect(() => { if (initialTopSection) setTopSection(initialTopSection); }, [initialTopSection]);
 
-  function onChange(next: LandingBlock[]) {
+  function onChangeBlocks(next: LandingBlock[]) {
     setBlocks(next);   // optimistic
-    persist(next);     // debounced save
+    persistBlocks(next);     // debounced save
+  }
+
+  function onChangeTopSection(patch: Partial<TopSection>) {
+    const next = { ...(topSection ?? {}), ...patch };
+    setTopSection(next);     // optimistic
+    persistTop(next);        // debounced save
   }
 
   // dnd sensors
@@ -96,22 +130,22 @@ export default function LandingEditor({
     const oldIndex = blocks.findIndex((_, i) => `b-${i}` === active.id);
     const newIndex = blocks.findIndex((_, i) => `b-${i}` === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
-    onChange(arrayMove(blocks, oldIndex, newIndex));
+    onChangeBlocks(arrayMove(blocks, oldIndex, newIndex));
   }
 
   // basic mutators
-  function addBlock(b: LandingBlock) { onChange([...blocks, b]); }
-  function removeAt(i: number) { onChange(blocks.filter((_, idx) => idx !== i)); }
+  function addBlock(b: LandingBlock) { onChangeBlocks([...blocks, b]); }
+  function removeAt(i: number) { onChangeBlocks(blocks.filter((_, idx) => idx !== i)); }
   function toggleAt(i: number) {
     const next = blocks.map((b, idx) => idx === i ? ({ ...b, _hidden: !(b as any)._hidden } as any) : b);
-    onChange(next as LandingBlock[]);
+    onChangeBlocks(next as LandingBlock[]);
   }
   function updateAt<T extends LandingBlock>(i: number, patch: Partial<T>) {
     const next = blocks.map((b, idx) => idx === i ? ({ ...b, ...patch } as LandingBlock) : b);
-    onChange(next);
+    onChangeBlocks(next);
   }
 
-  function applyPreset(preset: LandingBlock[]) { onChange(preset); }
+  function applyPreset(preset: LandingBlock[]) { onChangeBlocks(preset); }
 
   // UX saved badge timer
   useEffect(() => {
@@ -133,6 +167,48 @@ export default function LandingEditor({
           {error && <span className="inline-flex items-center gap-1 text-amber-700"><TriangleAlert className="h-4 w-4" /> {error}</span>}
         </div>
       </div>
+
+      {/* NEW: Top of Page settings */}
+      <section className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
+        <div className="mb-3 text-sm font-medium text-neutral-800">Top of Page</div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => onChangeTopSection({ mode: "header" })}
+            className={`rounded-xl border px-3 py-2 text-sm ${ (topSection?.mode ?? "header") !== "hero" ? "border-neutral-900" : "border-black/10" }`}
+          >
+            Header
+          </button>
+          <button
+            type="button"
+            onClick={() => onChangeTopSection({ mode: "hero" })}
+            className={`rounded-xl border px-3 py-2 text-sm ${ (topSection?.mode ?? "header") === "hero" ? "border-neutral-900" : "border-black/10" }`}
+          >
+            Hero (full page)
+          </button>
+        </div>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {[
+            { v: "small", label: "Small avatar" },
+            { v: "large-square", label: "Large (square)" },
+            { v: "large-circle", label: "Large (circle)" },
+          ].map(opt => (
+            <button
+              key={opt.v}
+              type="button"
+              onClick={() => onChangeTopSection({ header_style: opt.v as any })}
+              className={`rounded-xl border px-3 py-2 text-sm text-left ${ (topSection?.header_style ?? "small") === opt.v ? "border-neutral-900" : "border-black/10" }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <p className="mt-2 text-xs text-neutral-500">
+          Choose whether to show a compact header or a full-bleed hero, and pick the avatar style.
+        </p>
+      </section>
 
       {/* presets */}
       <section className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
@@ -389,26 +465,27 @@ function BlockCard({
                   <option value="none">None</option>
                 </select>
               </Row>
-                  <Row label="Show category navbar above products">
-                    <Switch
-                      checked={(block as any).show_category_nav ?? false}
-                      onChange={(v) => onChange({ show_category_nav: v } as any)}
-                    />
-                  </Row>
-                  {(block as any).show_category_nav && (
-                    <Row label="Navbar style">
-                      <select
-                        className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-                        value={(block as any).category_nav_style ?? "auto"}
-                        onChange={(e) => onChange({ category_nav_style: e.target.value as any } as any)}
-                      >
-                        <option value="auto">Auto (from theme)</option>
-                        <option value="chips">Chips</option>
-                        <option value="pills">Pills</option>
-                        <option value="square">Square buttons</option>
-                      </select>
-                    </Row>
-                  )}
+              <Row label="Show category navbar above products">
+                <Switch
+                  checked={(block as any).show_category_nav ?? false}
+                  onChange={(v) => onChange({ show_category_nav: v } as any)}
+                />
+              </Row>
+              {(block as any).show_category_nav && (
+                <Row label="Navbar style">
+                  <select
+                    className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
+                    value={(block as any).category_nav_style ?? "auto"}
+                    onChange={(e) => onChange({ category_nav_style: e.target.value as any } as any)}
+                  >
+                    <option value="auto">Auto (from theme)</option>
+                    <option value="chips">Chips</option>
+                    <option value="pills">Pills</option>
+                    <option value="square">Square buttons</option>
+                    <option value="cards">Cards</option>
+                  </select>
+                </Row>
+              )}
             </>
           )}
 

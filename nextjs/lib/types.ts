@@ -3,6 +3,11 @@
 /* ============================== Theme ==================================== */
 
 export type ThemeVariant = "clean" | "bold" | "minimal";
+export type ButtonStyle = "square" | "rounded" | "pills";
+export type ButtonShadow = "none" | "soft" | "bold";
+export type ButtonTone   = "solid" | "outline" | "soft"; // optional tone
+export type TopSectionMode = "header" | "hero";
+export type HeaderStyle = "small" | "large-square" | "large-circle";
 
 export type ThemeBackground = {
   type?: "color" | "gradient" | "image" | "none";
@@ -24,6 +29,14 @@ export type StorefrontTheme = {
   variant?: ThemeVariant;
   palette?: ThemePalette;
   background?: ThemeBackground;
+  // NEW: global UI defaults used across pages
+   defaults?: {
+    product_view?: GridMode;
+    category_nav_style?: CategoryNavStyle; // you already added this earlier
+    button_style?: ButtonStyle;            // NEW
+    button_shadow?: ButtonShadow;          // NEW
+    button_tone?: ButtonTone;              // optional (solid/outline/soft)
+  };
 };
 
 /* ============================ Landing Blocks ============================= */
@@ -89,7 +102,14 @@ export type StorefrontConfig = {
   display_mode?: StorefrontDisplayMode;
   landing_page?: StorefrontLanding;
   show_categories?: boolean | null;
-
+    landing_overrides?: {
+    /** Product view used on /[slug]/c/[cat] pages. */
+    category_page_view?: GridMode;
+    };
+    top_section?: {
+        mode?: TopSectionMode;          // "header" (default) | "hero"
+        header_style?: HeaderStyle;     // "small" | "large-square" | "large-circle"
+    };
   // Optional extras used in admin
   sort?: "newest" | "price_asc" | "price_desc" | "manual";
   cta_visibility?: Partial<Record<"instagram" | "whatsapp" | "custom1" | "custom2", boolean>>;

@@ -30,6 +30,8 @@ function Grid({ products, theme, slug, whatsapp, activeCatId, gridVariant }: any
   let columns;
   let gapClass = "gap-4";
   let cardVariant: "grid" | "grid-large" | "grid-clean" | "grid-ig"; // Map view to internal card variant
+console.log("Grid fuction:");
+console.log(theme);
 
   switch (gridVariant) {
     case "grid_1": // 1 column: larger slightly rectangular product image with title underneath in middle.

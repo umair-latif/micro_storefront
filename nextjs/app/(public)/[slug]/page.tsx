@@ -6,7 +6,11 @@ export const fetchCache = "force-no-store";
 import type { Metadata, ResolvingMetadata } from "next";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { getThemeFromConfig, resolveCategoryNavStyle } from "@/lib/theme";
+import {
+  getThemeFromConfig,
+  resolveCategoryNavStyle,
+  getDefaultProductView,
+} from "@/lib/theme";
 import {
   type StorefrontConfig,
   type Product,
@@ -16,7 +20,6 @@ import {
   type GridMode,
 } from "@/lib/types";
 import ProductViews from "@/components/storefront/ProductViews";
-import HeroOnly from "@/components/storefront/HeroOnly";
 import CategoryListView from "@/components/storefront/CategoryListView";
 import CategorySlider from "@/components/storefront/CategorySlider";
 import StorefrontHeader from "@/components/storefront/StorefrontHeader";
@@ -43,8 +46,8 @@ function getTitle(p: Profile) {
 
 function toBlocks(cfg: StorefrontConfig | null | undefined): LandingBlock[] {
   const c = cfg ?? {};
-  if (Array.isArray(c.landing_blocks) && c.landing_blocks.length > 0) {
-    return c.landing_blocks as LandingBlock[];
+  if (Array.isArray((c as any).landing_blocks) && (c as any).landing_blocks.length > 0) {
+    return (c as any).landing_blocks as LandingBlock[];
   }
 
   // Legacy fields → sensible default blocks
@@ -175,8 +178,10 @@ export default async function StorefrontPage({
     productsByCat[cid] = (productsAll as Product[]).filter((pr) => pr.category_id === cid);
   }
 
-  // Store header (used for non-hero-first pages)
-  const Header = (
+  // NEW: unified TopSection (Header or Hero) from cfg.top_section
+  const topMode = (cfg.top_section?.mode as "header" | "hero") ?? "header";
+  const headerStyle = (cfg.top_section?.header_style as "small" | "large-square" | "large-circle") ?? "small";
+  const TopSection = (
     <StorefrontHeader
       displayName={p.display_name}
       bio={p.bio}
@@ -185,41 +190,32 @@ export default async function StorefrontPage({
       socials={p.socials_config as SocialsConfig | null}
       whatsapp={p.wa_e164}
       theme={theme}
+      mode={topMode}
+      headerStyle={headerStyle}
     />
   );
-
-  // Decide whether to show header separately (if first block is hero, we skip header duplication)
-  const firstIsHero = blocks[0]?.type === "hero";
 
   return (
     <main className={theme.wrapper} style={{ background: theme.background }}>
       <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
-        {!firstIsHero ? Header : null}
+        {/* Always render configured top section */}
+        {TopSection}
 
         {blocks.map((b, i) => {
           if ((b as any)._hidden) return null;
 
           switch (b.type) {
+            // Legacy hero blocks are ignored; top section controls header/hero
             case "hero":
-              return (
-                <section key={`b-${i}`} className={b.dense ? "mb-4" : "mb-8"}>
-                  <HeroOnly
-                    coverUrl={p.header_img}
-                    avatarUrl={p.profile_img}
-                    title={p.display_name}
-                    bio={p.bio}
-                    socials={p.socials_config as SocialsConfig | null}
-                    whatsapp={p.wa_e164}
-                    theme={theme}
-                    dense={b.dense}
-                  />
-                </section>
-              );
+              return null;
 
             case "categories_wall": {
-              const wallView = b.view ?? "grid";            // "grid" | "list" | "links"
-              const cols = b.columns ?? 3;                  // only used by grid
-              const items = (b.limit ? categories.slice(0, b.limit) : categories) as Category[];
+              const wallView = (b as any).view ?? "grid";     // "grid" | "list" | "links"
+              const cols = (b as any).columns ?? 3;           // only used by grid
+              const items = (b as any).limit
+                ? (categories as Category[]).slice(0, (b as any).limit)
+                : (categories as Category[]);
+
               return (
                 <section key={`b-${i}`} className="mb-6">
                   <CategoryListView
@@ -234,18 +230,25 @@ export default async function StorefrontPage({
             }
 
             case "products": {
+              const src = (b as any).source;
               const list =
-                b.source === "all"
+                src === "all"
                   ? productsAll
-                  : productsByCat[(b.source as any).category_id] ?? [];
+                  : productsByCat[src?.category_id] ?? [];
 
-              const limited = typeof b.limit === "number" ? (list as Product[]).slice(0, b.limit) : list;
+              const limited =
+                typeof (b as any).limit === "number" ? (list as Product[]).slice(0, (b as any).limit) : list;
 
-              // NEW: optional category navbar shown with products
+              // Use block view if set, otherwise theme default (or legacy display_mode)
+              const productView = ((b as any).view ?? getDefaultProductView(cfg)) as GridMode;
+
+              // Optional category navbar shown with products
               const showNav = !!(b as any).show_category_nav;
+
+              // Block style override → theme default → variant mapping
               const navStyle = resolveCategoryNavStyle(
                 cfg.theme?.variant as any,
-                (b as any).category_nav_style as any
+                (b as any).category_nav_style ?? (cfg as any)?.theme?.defaults?.category_nav_style ?? "auto"
               );
 
               return (
@@ -258,45 +261,17 @@ export default async function StorefrontPage({
                         basePath={`/${p.slug}`}           // landing for “All”
                         categoryBasePath={`/${p.slug}/c`} // category pages
                         theme={theme}
-                        style={navStyle as any}
+                        navStyle={navStyle as any}
                       />
                     </div>
                   )}
 
                   <ProductViews
                     products={limited as any}
-                    view={b.view}
+                    view={productView}
                     theme={theme}
                     slug={p.slug}
                     whatsapp={p.wa_e164}
-                    // If ProductViews supports these toggles, keep them; otherwise remove.
-                    // showCaption={(b as any).show_caption}
-                    // showPrice={(b as any).show_price}
-                  />
-                </section>
-              );
-            }
-
-            case "products": {
-              const list =
-                b.source === "all"
-                  ? productsAll
-                  : productsByCat[(b.source as any).category_id] ?? [];
-
-              const limited =
-                typeof b.limit === "number" ? (list as Product[]).slice(0, b.limit) : list;
-
-              return (
-                <section key={`b-${i}`} className="mb-6">
-                  <ProductViews
-                    products={limited as any}
-                    view={b.view}
-                    theme={theme}
-                    slug={p.slug}
-                    whatsapp={p.wa_e164}
-                    // If ProductViews supports these, they’ll toggle UI; if not, remove them.
-                    //showCaption={b.show_caption}
-                    //showPrice={b.show_price}
                   />
                 </section>
               );
@@ -304,9 +279,9 @@ export default async function StorefrontPage({
 
             case "text":
               return (
-                <section key={`b-${i}`} className={`my-4 ${b.align === "center" ? "text-center" : ""}`}>
+                <section key={`b-${i}`} className={`my-4 ${(b as any).align === "center" ? "text-center" : ""}`}>
                   <div className="prose prose-neutral mx-auto">
-                    {b.content_md /* swap to markdown renderer if you have one */}
+                    {(b as any).content_md /* swap to markdown renderer if you have one */}
                   </div>
                 </section>
               );

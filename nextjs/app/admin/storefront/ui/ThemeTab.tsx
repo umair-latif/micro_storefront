@@ -1,11 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Palette, ChevronDown, ChevronUp, Wand2 } from "lucide-react";
+import type { GridMode } from "@/lib/types";
 
 /**
  * Drop-in Theme Tab UI for micro_storefront
  *
  * Usage:
- * <ThemeTab value={storefront.theme} onChange={(next)=>saveToSupabase(next)} />
+ * <ThemeTab
+ *   value={storefront.theme}
+ *   onChange={(next)=>saveTheme(next)}
+ *   categoryPageView={cfg.landing_overrides?.category_page_view}
+ *   onSetCategoryPageView={(v)=>saveCfg({...cfg, landing_overrides:{...(cfg.landing_overrides||{}), category_page_view:v}})}
+ * />
  *
  * Props
  *  - value: {
@@ -14,6 +20,8 @@ import { Palette, ChevronDown, ChevronUp, Wand2 } from "lucide-react";
  *      background?: { type?: 'color'|'gradient'|'image'|'none'; value?: string|null }
  *    }
  *  - onChange: (nextTheme) => void
+ *  - categoryPageView?: GridMode                          // OPTIONAL
+ *  - onSetCategoryPageView?: (v: GridMode|undefined) => void // OPTIONAL
  */
 
 export type StorefrontTheme = {
@@ -93,7 +101,6 @@ function resolveTheme(t: StorefrontTheme | undefined) {
 }
 
 // -------------------- Curated Looks -------------------- //
-// One-click presets that set variant + preset + optional overrides/background
 const CURATED: Array<{ id: string; name: string; desc: string; theme: StorefrontTheme }>
   = [
     { id: 'clean-default', name: 'Clean / Default', desc: 'Neutral with classic blue accent', theme: { variant: 'clean', palette: { preset: 'default' } } },
@@ -164,7 +171,17 @@ function AdvancedRow({ label, children }: React.PropsWithChildren<{ label: strin
 }
 
 // -------------------- Main Theme Tab -------------------- //
-export default function ThemeTab({ value, onChange }: { value?: StorefrontTheme; onChange: (t: StorefrontTheme) => void }) {
+export default function ThemeTab({
+  value,
+  onChange,
+  categoryPageView,                 // ← NEW (optional)
+  onSetCategoryPageView,            // ← NEW (optional)
+}: {
+  value?: StorefrontTheme;
+  onChange: (t: StorefrontTheme) => void;
+  categoryPageView?: GridMode;
+  onSetCategoryPageView?: (v: GridMode | undefined) => void;
+}) {
   const [openAdvanced, setOpenAdvanced] = useState(false);
   const [theme, setTheme] = useState<StorefrontTheme>(value ?? { variant: 'clean', palette: { preset: 'default' } });
 
@@ -195,14 +212,13 @@ export default function ThemeTab({ value, onChange }: { value?: StorefrontTheme;
   }
 
   function applyCurated(c: StorefrontTheme) {
-    // curated looks only set variant/preset by default
     update({ variant: c.variant, palette: { preset: c.palette?.preset ?? null, primary: c.palette?.primary ?? null, accent: c.palette?.accent ?? null }, background: c.background });
   }
 
   return (
     <div className="space-y-4">
       {/* Curated Looks */}
-      <Section title="Curated looks (one‑click)">
+      <Section title="Curated looks (one-click)">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {CURATED.map((c) => {
             const r = resolveTheme(c.theme);
@@ -253,6 +269,31 @@ export default function ThemeTab({ value, onChange }: { value?: StorefrontTheme;
         </button>
         {openAdvanced && (
           <div className="grid gap-3 sm:grid-cols-2">
+            {/* NEW: Category page product view override (global) */}
+            {typeof onSetCategoryPageView === "function" && (
+              <AdvancedRow label="Category Page Product View (override)">
+                <select
+                  className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
+                  value={categoryPageView ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value as GridMode | "";
+                    onSetCategoryPageView(v ? (v as GridMode) : undefined);
+                  }}
+                >
+                  <option value="">Default (theme)</option>
+                  <option value="grid">Grid</option>
+                  <option value="grid_1">Grid 1</option>
+                  <option value="grid_2">Grid 2</option>
+                  <option value="grid_3">Grid 3</option>
+                  <option value="list">List</option>
+                  <option value="links">Links</option>
+                </select>
+                <p className="mt-1 text-xs text-neutral-500">
+                  Controls how products render on category pages (<code>/slug/c/[cat]</code>). Does not affect Product blocks on the landing page.
+                </p>
+              </AdvancedRow>
+            )}
+
             <AdvancedRow label="Primary color (hex)">
               <div className="flex items-center gap-2">
                 <input
@@ -318,7 +359,7 @@ export default function ThemeTab({ value, onChange }: { value?: StorefrontTheme;
           </div>
         )}
       </section>
-
+      
       {/* Live Preview */}
       <Section title="Effective theme preview">
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">

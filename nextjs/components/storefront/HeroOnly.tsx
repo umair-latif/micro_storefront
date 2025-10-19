@@ -48,8 +48,8 @@ export default function HeroOnly({
           <CTAButtons
             whatsapp={whatsapp ?? undefined}
             accent={theme.accent}
-            buttonClass={theme.button}
-          />
+            themeVariant={theme.variant}         
+            />
         </div>
       </div>
     </section>

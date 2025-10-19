@@ -3,7 +3,7 @@ import Image from "next/image";
 export default function SiteFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="mt-12 border-t border-black/5 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <footer className="border-t border-black/5 bg-white/0 backdrop-blur supports-[backdrop-filter]:bg-white/0">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
         {/* Left: brand + tagline */}
         <div className="flex items-center gap-3">

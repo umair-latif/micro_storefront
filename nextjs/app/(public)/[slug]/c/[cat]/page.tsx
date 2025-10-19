@@ -7,12 +7,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { getThemeFromConfig } from "@/lib/theme";
+import { 
+  getThemeFromConfig, 
+  getDefaultProductView,          // ← NEW
+  getDefaultCategoryNavStyle,     // ← NEW
+  getCategoryPageView             // ← NEW
+} from "@/lib/theme";
 import {
   type StorefrontConfig,
   type Category,
   type Product,
   type SocialsConfig,
+  type GridMode,
 } from "@/lib/types";
 import StorefrontHeader from "@/components/storefront/StorefrontHeader";
 import CategorySlider from "@/components/storefront/CategorySlider";
@@ -20,7 +26,6 @@ import ProductViews from "@/components/storefront/ProductViews";
 
 type Params = { slug: string; cat: string };
 
-// (optional) SEO; you can expand this with category name later
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const supabase = createSupabaseServerClient();
   const { data: p } = await supabase
@@ -44,7 +49,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
   const { slug, cat } = params;
   const supabase = createSupabaseServerClient();
 
-  // profile
+  // Profile
   const { data: p } = await supabase
     .from("profiles")
     .select("*")
@@ -54,22 +59,26 @@ export default async function CategoryPage({ params }: { params: Params }) {
 
   if (!p) notFound();
 
-  // config + theme
+  // Config + theme
   const rawCfg = (p as any).storefront_config ?? {};
-  const cfg: StorefrontConfig = typeof rawCfg === "string" ? (() => { try { return JSON.parse(rawCfg) } catch { return {} } })() : rawCfg;
+  const cfg: StorefrontConfig =
+    typeof rawCfg === "string" ? (() => { try { return JSON.parse(rawCfg); } catch { return {}; } })() : rawCfg;
   const theme = getThemeFromConfig(cfg);
 
-  // categories (for slider + title)
+  // Categories (for slider + title)
   const { data: categories = [] } = await supabase
     .from("categories")
     .select("id, name, position, cover_img")
     .eq("profile_id", p.id)
     .order("position", { ascending: true });
 
-  const activeCat = categories.find((c: Category) => c.id === cat);
+  // String-safe match (ids can be string/number)
+  const activeCat = (categories as Category[]).find(
+    (c) => String(c.id) === String(cat)
+  );
   if (!activeCat) notFound();
 
-  // products in category
+  // Products in category
   const { data: products = [] } = await supabase
     .from("products")
     .select(
@@ -77,11 +86,12 @@ export default async function CategoryPage({ params }: { params: Params }) {
     )
     .eq("profile_id", p.id)
     .eq("visible", true)
-    .eq("category_id", cat)
+    .eq("category_id", activeCat.id)
     .order("position", { ascending: true });
 
-  // choose a view: use cfg.display_mode if set, else grid_3
-  const view = (cfg.display_mode ?? "grid_3") as any;
+  // 🔽 NEW: theme-driven defaults
+  const view = getCategoryPageView(cfg);          
+  const navStyle = getDefaultCategoryNavStyle(cfg);                 // e.g., theme.defaults.category_nav_style → "chips"
 
   return (
     <main className={theme.wrapper} style={{ background: theme.background }}>
@@ -96,7 +106,21 @@ export default async function CategoryPage({ params }: { params: Params }) {
           theme={theme}
         />
 
-        {/* Back + category chips */}
+        {/* Category slider (All → landing; others → /slug/c/[id]) }
+        {categories.length > 0 && (
+          <div className="mb-4">
+            <CategorySlider
+              categories={[{ id: "all" as any, name: "All" }, ...(categories as Category[])] as any}
+              activeId={String(activeCat.id)}
+              basePath={`/${slug}`}
+              categoryBasePath={`/${slug}/c`}
+              theme={theme}
+              navStyle={navStyle}
+            />
+          </div>
+        )}
+
+        { Back + current category */}
         <div className="mb-4 flex items-center justify-between">
           <Link
             href={`/${slug}`}
@@ -110,28 +134,13 @@ export default async function CategoryPage({ params }: { params: Params }) {
           </span>
         </div>
 
-        {/* category chips row */}
-        {categories.length > 0 && (
-          <div className="mb-4">
-            <CategorySlider
-              categories={[{ id: "all" as any, name: "All" }, ...categories] as any}
-              activeId={cat}
-              basePath={`/${slug}`}
-              theme={theme}
-              // If your CategorySlider supports a `categoryBasePath`, pass it and build c-links there
-              categoryBasePath={`/${slug}/c`}
-            />
-          </div>
-        )}
-
         <ProductViews
           products={products as Product[]}
           view={view}
           theme={theme}
           slug={slug}
           whatsapp={p.wa_e164}
-          // If your Product card links should preserve the category, pass cat here if supported
-          activeCatId={cat as any}
+          activeCatId={String(activeCat.id) as any}
         />
       </div>
     </main>

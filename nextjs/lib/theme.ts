@@ -1,4 +1,8 @@
-import type { StorefrontConfig, StorefrontTheme } from "./types";
+import type { StorefrontConfig, StorefrontTheme ,CategoryNavStyle, GridMode,
+  ButtonStyle,
+  ButtonShadow,
+  ButtonTone,LandingBlock } from "./types";
+
 // Assuming types.ts contains:
 // type StorefrontConfig = { theme?: StorefrontTheme; ... };
 // type StorefrontTheme = { variant?: 'clean'|'bold'|'minimal'; palette?: { preset?: string; primary?: string | null; accent?: string | null }; background?: { type: 'color' | 'gradient' | 'image' | 'none'; value: string | null }; }
@@ -91,8 +95,8 @@ function finalizeTokens(
 
 export function resolveCategoryNavStyle(
   themeVariant?: "clean" | "bold" | "minimal",
-  style?: "auto" | "chips" | "pills" | "square"
-) {
+  style?: CategoryNavStyle
+) : Exclude<CategoryNavStyle, "auto">{
   if (style && style !== "auto") return style;
   switch (themeVariant) {
     case "bold":
@@ -103,6 +107,41 @@ export function resolveCategoryNavStyle(
     default:
       return "pills";
   }
+}
+
+export function getDefaultButtonStyle(cfg?: StorefrontConfig | null): ButtonStyle {
+  return (cfg?.theme?.defaults?.button_style ?? inferButtonStyleFromVariant(cfg?.theme?.variant)) as ButtonStyle;
+}
+
+export function getDefaultButtonShadow(cfg?: StorefrontConfig | null): ButtonShadow {
+  return (cfg?.theme?.defaults?.button_shadow ?? "soft") as ButtonShadow;
+}
+
+export function getDefaultButtonTone(cfg?: StorefrontConfig | null): ButtonTone {
+  // Bold pops best with "solid", Clean/Minimal often "soft"/"outline"
+  return (cfg?.theme?.defaults?.button_tone ??
+    (cfg?.theme?.variant === "bold" ? "solid" : "soft")) as ButtonTone;
+}
+
+function inferButtonStyleFromVariant(variant?: "clean" | "bold" | "minimal"): ButtonStyle {
+  switch (variant) {
+    case "bold": return "pills";
+    case "minimal": return "square";
+    case "clean":
+    default: return "rounded";
+  }
+}
+export function getDefaultProductView(cfg: StorefrontConfig | null | undefined): GridMode {
+  // theme-level preset
+  const fromTheme = cfg?.theme?.defaults?.product_view as GridMode | undefined;
+  if (fromTheme) return fromTheme;
+
+  // legacy fallback
+  const legacy = (cfg?.display_mode as GridMode | undefined) ?? undefined;
+  if (legacy) return legacy;
+
+  // final fallback
+  return "grid_3";
 }
 
 export function getThemeFromConfig(cfg: StorefrontConfig): ResolvedTheme {
@@ -175,4 +214,79 @@ export function getThemeFromConfig(cfg: StorefrontConfig): ResolvedTheme {
             backgroundType: bgType as ResolvedTheme['backgroundType'] 
         }
     );
+}
+
+export function getCategoryPageView(cfg?: StorefrontConfig | null): GridMode {
+  // 1) Advanced override (Landing → Advanced)
+  const adv = cfg?.landing_overrides?.category_page_view as GridMode | undefined;
+  if (adv) return adv;
+
+  // 2) Products block specific preference (first one wins)
+  const blocks = (cfg as any)?.landing_blocks as LandingBlock[] | undefined;
+  if (Array.isArray(blocks)) {
+    const hit = blocks.find(
+      (b) =>
+        (b.type === "products") &&
+        (b as any).view
+    ) as any;
+    if (hit?.view) {
+      return hit.view as GridMode;
+    }
+  }
+
+  // 3) Theme default (theme.defaults.product_view) or legacy cfg.display_mode
+  return getDefaultProductView(cfg);
+}
+
+export function buttonClasses(
+  opts: {
+    style?: ButtonStyle;
+    shadow?: ButtonShadow;
+    tone?: ButtonTone;
+    size?: "sm" | "md" | "lg";
+    fullWidth?: boolean;
+  } = {}
+): string {
+  const { style = "rounded", shadow = "soft", tone = "solid", size = "md", fullWidth } = opts;
+
+  const radius =
+    style === "square" ? "rounded-lg" :
+    style === "pills"  ? "rounded-full" :
+                         "rounded-xl"; // rounded
+
+  const padding =
+    size === "sm" ? "px-3 py-1.5 text-sm" :
+    size === "lg" ? "px-5 py-3 text-base" :
+                    "px-4 py-2 text-sm";
+
+  const width = fullWidth ? "w-full" : "";
+
+  const base = [
+    "inline-flex items-center justify-center gap-2",
+    "transition focus:outline-none",
+    "focus-visible:ring-2 focus-visible:ring-[var(--sf-primary)]/40",
+    radius,
+    padding,
+    width,
+  ];
+
+  const toneClasses =
+    tone === "outline"
+      ? "border border-[var(--sf-primary)] text-[var(--sf-primary)] bg-transparent hover:bg-[var(--sf-primary)]/5"
+      : tone === "soft"
+      ? "border border-[var(--sf-border)] bg-[var(--sf-primary)]/10 text-[var(--sf-text)] hover:bg-[var(--sf-primary)]/15"
+      : /* solid */
+        "border border-[var(--sf-primary)] bg-[var(--sf-primary)] text-white hover:brightness-95";
+
+  const shadowClasses =
+    shadow === "none" ? "" :
+    shadow === "bold" ? "shadow-lg" : "shadow"; // soft
+
+  return [...base, toneClasses, shadowClasses].join(" ");
+}
+export function getDefaultCategoryNavStyle(
+  cfg: StorefrontConfig | null | undefined
+): Exclude<CategoryNavStyle, "auto"> {
+  const preset = cfg?.theme?.defaults?.category_nav_style;
+  return resolveCategoryNavStyle(cfg?.theme?.variant, preset);
 }
