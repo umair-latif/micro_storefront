@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import CategoryCard from "@/components/storefront/CategoryCard";
 import { type Category, type StorefrontTheme } from "@/lib/types";
+import SfButton from "@/components/storefront/SfButton";
 
 type Props = {
   categories: Category[];
@@ -25,14 +26,14 @@ export default function CategoryListView({
     return (
       <section className="mx-auto flex max-w-md flex-col gap-3">
         {categories.map((c) => (
-          <Link
-            key={c.id}
+         <SfButton
             href={`${basePath}/c/${c.id}`}
-            className="rounded-full border border-black/10 px-5 py-3 text-center shadow-sm hover:shadow"
-            style={{ background: "white", color: (theme as any)?.text }}
+            theme={theme}            // just pass theme
+            size="md"
+            fullWidth
           >
-            <div className="text-base font-medium">{c.name}</div>
-          </Link>
+            <span className="text-base font-medium">{c.name}</span>
+          </SfButton>
         ))}
       </section>
     );
@@ -43,11 +44,14 @@ export default function CategoryListView({
     return (
       <section className="flex flex-col gap-3">
         {categories.map((c) => (
-          <Link
-            key={c.id}
+          <SfButton
             href={`${basePath}/c/${c.id}`}
-            className={`${(theme as any)?.card ?? "rounded-xl border border-black/10 bg-white"} flex items-center gap-3 p-3 hover:shadow-md`}
+            theme={theme}
+            size="md"
+            fullWidth
+            className="flex items-center gap-3 p-3 !text-left"
           >
+            {/* thumbnail + label here */}
             <div className="relative h-24 w-24 overflow-hidden rounded-lg bg-black/5">
               {c.cover_img ? (
                 <Image src={c.cover_img} alt={c.name} fill className="object-cover" />
@@ -56,7 +60,7 @@ export default function CategoryListView({
             <div className="text-xl font-medium" style={{ color: (theme as any)?.text }}>
               {c.name}
             </div>
-          </Link>
+          </SfButton>
         ))}
       </section>
     );

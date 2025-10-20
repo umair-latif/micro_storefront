@@ -109,6 +109,38 @@ export function resolveCategoryNavStyle(
   }
 }
 
+const toRgb = (hexOrRgb: string): [number, number, number] => {
+  if (hexOrRgb.startsWith("rgb")) {
+    const m = hexOrRgb.match(/\d+(\.\d+)?/g);
+    if (!m) return [0,0,0];
+    return [Number(m[0]), Number(m[1]), Number(m[2])];
+  }
+  // normalize short hex #abc -> #aabbcc
+  const hex = hexOrRgb.replace("#","").trim();
+  const full = hex.length === 3 ? hex.split("").map(c => c + c).join("") : hex;
+  const num = parseInt(full, 16);
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+};
+
+const relLuminance = (r: number, g: number, b: number) => {
+  const toLin = (c: number) => {
+    const cs = c / 255;
+    return cs <= 0.03928 ? cs / 12.92 : Math.pow((cs + 0.055) / 1.055, 2.4);
+  };
+  const [R, G, B] = [toLin(r), toLin(g), toLin(b)];
+  return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+};
+
+// Returns black or white for best contrast on bg
+export const getReadableText = (bg: string): "#000000" | "#ffffff" => {
+  const [r, g, b] = toRgb(bg);
+  const Lbg = relLuminance(r, g, b);
+  // Contrast with black (L=0) and white (L=1). Pick higher.
+  const cBlack = (Lbg + 0.05) / 0.05;  // contrast vs black
+  const cWhite = (1.05) / (Lbg + 0.05); // contrast vs white
+  return cWhite >= cBlack ? "#ffffff" : "#000000";
+};
+
 export function getDefaultButtonStyle(cfg?: StorefrontConfig | null): ButtonStyle {
   return (cfg?.theme?.defaults?.button_style ?? inferButtonStyleFromVariant(cfg?.theme?.variant)) as ButtonStyle;
 }
