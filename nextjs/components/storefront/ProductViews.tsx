@@ -1,8 +1,7 @@
-
 // components/storefront/ProductViews.tsx
 "use client";
 import ProductCard from "@/components/storefront/ProductCard";
-import Link from "next/link";
+import SfButton from "@/components/storefront/SfButton";
 import { type Product } from "@/lib/types";
 
 // Extended type for the view prop
@@ -30,8 +29,6 @@ function Grid({ products, theme, slug, whatsapp, activeCatId, gridVariant }: any
   let columns;
   let gapClass = "gap-4";
   let cardVariant: "grid" | "grid-large" | "grid-clean" | "grid-ig"; // Map view to internal card variant
-console.log("Grid fuction:");
-console.log(theme);
 
   switch (gridVariant) {
     case "grid_1": // 1 column: larger slightly rectangular product image with title underneath in middle.
@@ -70,15 +67,25 @@ console.log(theme);
     </section>
   );
 }
+
 function List({ products, theme, slug, whatsapp, activeCatId }: any) {
   return (
     <section className="flex flex-col gap-3">
       {products.map((p: Product) => (
-        <ProductCard key={p.id} product={p} theme={theme} variant="list" slug={slug} whatsapp={whatsapp} activeCatId={activeCatId} />
+        <ProductCard
+          key={p.id}
+          product={p}
+          theme={theme}
+          variant="list"
+          slug={slug}
+          whatsapp={whatsapp}
+          activeCatId={activeCatId}
+        />
       ))}
     </section>
   );
 }
+
 function Linktree({ products, theme, slug, activeCatId }: any) {
   return (
     <section className="mx-auto flex max-w-md flex-col gap-3">
@@ -86,9 +93,18 @@ function Linktree({ products, theme, slug, activeCatId }: any) {
         const q = activeCatId && activeCatId !== "all" ? `?cat=${activeCatId}` : "";
         const href = `/${slug}/p/${p.id}${q}`;
         return (
-          <Link key={p.id} href={href} className="rounded-full border border-black/10 px-5 py-3 text-center shadow-sm hover:shadow" style={{ background: "white", color: theme.text }}>
-            <div className="text-base font-medium">{p.title}</div>
-          </Link>
+          <SfButton
+            key={p.id}
+            href={href}
+            theme={theme}        // SfButton derives style/shadow/tone from theme
+            size="md"
+            fullWidth
+            // If you prefer accent-colored pills here, add: colorSource="accent"
+            colorSource="accent"
+            btnTone="solid"
+          >
+            <span className="text-base font-medium">{p.title}</span>
+          </SfButton>
         );
       })}
     </section>

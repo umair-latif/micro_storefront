@@ -95,7 +95,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pa
   return (
     <main className={theme.wrapper} style={{ background: theme.background }}>
       <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
-        {/* header follows your new rules */}
+        {/* header follows your new rules}
         <StorefrontHeader
           displayName={p.display_name}
           bio={p.bio}
@@ -105,6 +105,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pa
           whatsapp={p.wa_e164}
           theme={theme}
         />
+        {*/}
 
         <div className="mb-4">
         <Link
@@ -118,10 +119,12 @@ export default async function ProductPage({ params, searchParams }: { params: Pa
 
         <article className="grid gap-6 md:grid-cols-2">
           {/* gallery */}
-          <ProductGallery
-            images={[prod.thumb_url].filter(Boolean) as string[]}
-            theme={theme}
-          />
+          {prod?.thumb_url && (
+            <ProductGallery
+              images={[prod.thumb_url]}
+              theme={theme}
+            />
+          )}
 
           {/* details */}
           <section className={`${theme.card} p-4`}>
@@ -150,6 +153,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pa
                 instagramUrl={prod.instagram_permalink ?? undefined}
                 customLabel={prod.cta_label ?? undefined}
                 customUrl={prod.cta_url ?? undefined}
+                btnTone="solid"
               />
             </div>
           </section>

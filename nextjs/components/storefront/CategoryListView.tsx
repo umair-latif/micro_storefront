@@ -31,6 +31,7 @@ export default function CategoryListView({
             theme={theme}            // just pass theme
             size="md"
             fullWidth
+            btnTone="outline"
           >
             <span className="text-base font-medium">{c.name}</span>
           </SfButton>
