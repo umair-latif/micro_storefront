@@ -93,7 +93,7 @@ export default function StorefrontSettingsForm({
         </div>
         <div>
           <label className="block text-sm font-medium">Background Value</label>
-          <input name="backgroundValue" defaultValue={bgValue} placeholder="#fff or linear-gradient(...) or URL" className="mt-1 w-full rounded-md border p-2" />
+          <input name="backgroundValue" defaultValue={bgValue} placeholder="#fff or linear-gradient(to top right, #FEF3C7, #FDBA74) or URL" className="mt-1 w-full rounded-md border p-2" />
         </div>
       </div>
 

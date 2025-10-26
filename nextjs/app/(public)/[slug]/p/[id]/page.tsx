@@ -91,9 +91,19 @@ export default async function ProductPage({ params, searchParams }: { params: Pa
 
   const cfg = ((p.storefront_config ?? {}) as StorefrontConfig);
   const theme = getThemeFromConfig(cfg);
+  // Build the style for the page background
+  const pageBgStyle =
+    theme.backgroundType === "image" || theme.backgroundType === "gradient"
+      ? {
+          backgroundColor: theme.background, // fallback color while image loads
+          ...(theme.backgroundCSS ?? { backgroundImage: theme.backgroundImage }),
+        }
+      : {
+          backgroundColor: theme.background,
+        };
 
   return (
-    <main className={theme.wrapper} style={{ background: theme.background }}>
+    <main className={theme.wrapper} style={ pageBgStyle }>
       <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
         {/* header follows your new rules}
         <StorefrontHeader
@@ -113,7 +123,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pa
           className="text-sm underline-offset-4 hover:underline"
           style={{ color: theme.muted }}
         >
-          ← Back to {catParam ? (catLabel || "category") : p.display_name}
+          ← Back
         </Link>
       </div>
 
@@ -127,19 +137,19 @@ export default async function ProductPage({ params, searchParams }: { params: Pa
           )}
 
           {/* details */}
-          <section className={`${theme.card} p-4`}>
+          <section className={`${theme.card} p-4 bg bg-white/90`}>
             <h1 className="text-xl font-semibold" style={{ color: theme.text }}>
               {prod.title}
             </h1>
 
             {prod.price ? (
-              <div className="mt-2 text-lg font-medium" style={{ color: theme.text }}>
+              <div className="mt-2 text-lg font-medium" style={{ color: theme.primary }}>
                 {prod.price}
               </div>
             ) : null}
 
             {prod.caption ? (
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed" style={{ color: theme.muted }}>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed" style={{ color: theme.text }}>
                 {prod.caption}
               </p>
             ) : null}
@@ -149,6 +159,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pa
               <CTAButtons
                 accent={theme.accent}
                 cfg={cfg}
+                themeVariant = {theme.variant}
                 whatsapp={(p.wa_e164 ?? undefined) as string | undefined}
                 instagramUrl={prod.instagram_permalink ?? undefined}
                 customLabel={prod.cta_label ?? undefined}

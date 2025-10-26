@@ -92,10 +92,21 @@ export default async function CategoryPage({ params }: { params: Params }) {
   // 🔽 NEW: theme-driven defaults
   const view = getCategoryPageView(cfg);          
   const navStyle = getDefaultCategoryNavStyle(cfg);                 // e.g., theme.defaults.category_nav_style → "chips"
+  // Build the style for the page background
+  const pageBgStyle =
+    theme.backgroundType === "image" || theme.backgroundType === "gradient"
+      ? {
+          backgroundColor: theme.background, // fallback color while image loads
+          ...(theme.backgroundCSS ?? { backgroundImage: theme.backgroundImage }),
+        }
+      : {
+          backgroundColor: theme.background,
+        };
 
   return (
-    <main className={theme.wrapper} style={{ background: theme.background }}>
+    <main className={theme.wrapper} style={pageBgStyle}>
       <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
+        {/* Category slider (All → landing; others → /slug/c/[id]) }
         <StorefrontHeader
           displayName={p.display_name}
           bio={p.bio}
@@ -127,9 +138,9 @@ export default async function CategoryPage({ params }: { params: Params }) {
             className="text-sm underline-offset-4 hover:underline"
             style={{ color: theme.muted }}
           >
-            ← Back to home
+            ← Back
           </Link>
-          <span className="text-sm font-medium" style={{ color: theme.text }}>
+          <span className="text-sm font-medium" style={{ color: theme.muted }}>
             {activeCat.name}
           </span>
         </div>

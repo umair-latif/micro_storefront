@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Palette, ChevronDown, ChevronUp, Wand2 } from "lucide-react";
 import type { GridMode } from "@/lib/types";
+import BackgroundEditorRow from "./BackgroundEditorRow"
 
 /**
  * Drop-in Theme Tab UI for micro_storefront
@@ -343,13 +344,12 @@ export default function ThemeTab({
               </select>
             </AdvancedRow>
 
-            <AdvancedRow label="Background value">
-              <input
-                className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-                placeholder="#F8FAFC  |  linear-gradient(...)  |  https://...jpg"
-                value={theme.background?.value ?? ''}
-                onChange={(e) => update({ background: { value: e.target.value || null } })}
-              />
+            <AdvancedRow label="Background">
+             <BackgroundEditorRow
+              theme={theme}
+              update={update}
+              profileId="storefront"
+            />
             </AdvancedRow>
 
             <div className="sm:col-span-2 flex flex-wrap items-center gap-2">

@@ -1,24 +1,26 @@
 // lib/types.ts
+import type { CSSProperties } from "react";
 
 /* ============================== Theme ==================================== */
 
 export type ThemeVariant = "clean" | "bold" | "minimal";
-export type ButtonStyle = "square" | "rounded" | "pills";
-export type ButtonShadow = "none" | "soft" | "bold";
-export type ButtonTone   = "solid" | "outline" | "soft"; // optional tone
+export type ButtonStyle  = "square" | "rounded" | "pills";
+export type ButtonShadow = "none" | "soft" | "hard";         // « was "bold", aligned to helpers
+export type ButtonTone   = "solid" | "outline" | "soft";
 export type TopSectionMode = "header" | "hero";
-export type HeaderStyle = "small" | "large-square" | "large-circle";
+export type HeaderStyle    = "small" | "large-square" | "large-circle";
+export type BackgroundType = "none" | "color" | "image" | "gradient";
 
 export type ThemeBackground = {
-  type?: "color" | "gradient" | "image" | "none";
-  value?: string | null;
+  type?: BackgroundType;
+  value?: string | null; // hex/rgb for color, data for gradient, URL for image
 };
 
 export type ThemePalette = {
   preset?: string | null;
   primary?: string | null;
   accent?: string | null;
-  // Optional resolved tokens (filled by your resolver)
+  // Optional resolved tokens (filled by resolver)
   bg?: string;
   surface?: string;
   text?: string;
@@ -29,22 +31,50 @@ export type StorefrontTheme = {
   variant?: ThemeVariant;
   palette?: ThemePalette;
   background?: ThemeBackground;
-  // NEW: global UI defaults used across pages
-   defaults?: {
+  // Global UI defaults
+  defaults?: {
     product_view?: GridMode;
-    category_nav_style?: CategoryNavStyle; // you already added this earlier
-    button_style?: ButtonStyle;            // NEW
-    button_shadow?: ButtonShadow;          // NEW
-    button_tone?: ButtonTone;              // optional (solid/outline/soft)
+    category_nav_style?: CategoryNavStyle;
+    button_style?: ButtonStyle;
+    button_shadow?: ButtonShadow;
+    button_tone?: ButtonTone;
   };
 };
 
+// Base tokens your resolver produces (extend as needed)
+export type BaseColorTokens = {
+  background: string; // base bg color fallback
+  surface: string;
+  text: string;
+  muted: string;
+  primary: string;
+  accent: string;
+  onBackground: "#000000" | "#ffffff";
+  onPrimary: "#000000" | "#ffffff";
+  onAccent: "#000000" | "#ffffff";
+};
+
+export interface ResolvedTheme extends BaseColorTokens {
+  backgroundType: "none" | "color" | "image" | "gradient";
+  backgroundImage?: string;
+  backgroundCSS?: CSSProperties;
+
+  // add these so finalizeTokens(...) is type-safe
+  variant: "clean" | "bold" | "minimal";
+  primary: string;            // (yes, also in BaseColorTokens; keeps theme.ts happy)
+  wrapper: string;
+  card: string;
+  button: string;
+  chip: string;
+}
+
 /* ============================ Landing Blocks ============================= */
 
-// unified grid modes used across admin + public
+// Unified grid modes used across admin + public
 export type GridMode = "grid" | "grid_1" | "grid_2" | "grid_3" | "list" | "links";
 export type CategoryNavStyle = "auto" | "chips" | "pills" | "square";
-// common optional flags for all blocks
+
+// Common optional flags for all blocks
 type BaseBlock = { _hidden?: boolean };
 
 export type LandingBlock =
@@ -57,11 +87,10 @@ export type LandingBlock =
       dense?: boolean;
     } & BaseBlock)
   | ({
-      type: "categories_wall";           // NEW: was category_cover_wall
-      view?: GridMode;                   // "grid" | "list" | "links"
-      columns?: 2 | 3 | 4;               // for grid only (default 3)
+      type: "categories_wall";        // NEW: was category_cover_wall
+      view?: GridMode;                // "grid" | "list" | "links"
+      columns?: 2 | 3 | 4;            // for grid only (default 3)
       limit?: number;
-      _hidden?: boolean;
     } & BaseBlock)
   | ({
       type: "products";
@@ -71,9 +100,8 @@ export type LandingBlock =
       show_caption?: boolean;
       limit?: number;
       cta?: "whatsapp" | "product" | "none";
-        show_category_nav?: boolean;       // default false
+      show_category_nav?: boolean;          // default false
       category_nav_style?: CategoryNavStyle; // "auto" (default), "chips" | "pills" | "square"
-      _hidden?: boolean;
     } & BaseBlock)
   | ({
       type: "text";
@@ -83,7 +111,6 @@ export type LandingBlock =
 
 /* ============================ Storefront cfg ============================= */
 
-// de-duplicate: use GridMode everywhere
 export type StorefrontDisplayMode = GridMode;
 
 export type StorefrontLanding =
@@ -95,21 +122,24 @@ export type StorefrontLanding =
 export type StorefrontConfig = {
   theme?: StorefrontTheme;
 
-  // New: block-based rendering (used by public page + admin builder)
+  // Block-based rendering (public page + admin builder)
   landing_blocks?: LandingBlock[];
 
   // Legacy/compat fields (still supported & mapped to blocks at runtime)
   display_mode?: StorefrontDisplayMode;
   landing_page?: StorefrontLanding;
   show_categories?: boolean | null;
-    landing_overrides?: {
+
+  landing_overrides?: {
     /** Product view used on /[slug]/c/[cat] pages. */
     category_page_view?: GridMode;
-    };
-    top_section?: {
-        mode?: TopSectionMode;          // "header" (default) | "hero"
-        header_style?: HeaderStyle;     // "small" | "large-square" | "large-circle"
-    };
+  };
+
+  top_section?: {
+    mode?: TopSectionMode;          // "header" (default) | "hero"
+    header_style?: HeaderStyle;     // "small" | "large-square" | "large-circle"
+  };
+
   // Optional extras used in admin
   sort?: "newest" | "price_asc" | "price_desc" | "manual";
   cta_visibility?: Partial<Record<"instagram" | "whatsapp" | "custom1" | "custom2", boolean>>;

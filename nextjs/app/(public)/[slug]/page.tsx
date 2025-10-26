@@ -194,103 +194,131 @@ export default async function StorefrontPage({
       headerStyle={headerStyle}
     />
   );
+console.log("THEME BG →", {
+  type: theme.backgroundType,
+  bg: theme.background,
+  img: theme.backgroundImage,
+  css: theme.backgroundCSS,
+});
+// Build the style for the page background
+const pageBgStyle =
+  theme.backgroundType === "image" || theme.backgroundType === "gradient"
+    ? {
+        backgroundColor: theme.background, // fallback color while image loads
+        ...(theme.backgroundCSS ?? { backgroundImage: theme.backgroundImage }),
+      }
+    : {
+        backgroundColor: theme.background,
+      };
 
-  return (
-    <main className={theme.wrapper} style={{ background: theme.background }}>
-      <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
-        {/* Always render configured top section */}
-        {TopSection}
+return (
+  <main
+    className={theme.wrapper + " min-h-dvh"}
+    style={pageBgStyle}
+  >
+    <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
+      {/* Always render configured top section */}
+      {TopSection}
 
-        {blocks.map((b, i) => {
-          if ((b as any)._hidden) return null;
+      {blocks.map((b, i) => {
+        if ((b as any)._hidden) return null;
 
-          switch (b.type) {
-            // Legacy hero blocks are ignored; top section controls header/hero
-            case "hero":
-              return null;
+        switch (b.type) {
+          case "hero":
+            return null;
 
-            case "categories_wall": {
-              const wallView = (b as any).view ?? "grid";     // "grid" | "list" | "links"
-              const cols = (b as any).columns ?? 3;           // only used by grid
-              const items = (b as any).limit
-                ? (categories as Category[]).slice(0, (b as any).limit)
-                : (categories as Category[]);
+          case "categories_wall": {
+            const wallView = (b as any).view ?? "grid";
+            const cols = (b as any).columns ?? 3;
+            const items = (b as any).limit
+              ? (categories as Category[]).slice(0, (b as any).limit)
+              : (categories as Category[]);
 
-              return (
-                <section key={`b-${i}`} className="mb-6">
-                  <CategoryListView
-                    categories={items}
-                    view={wallView as any}
-                    basePath={`/${p.slug}`}
-                    theme={theme}
-                    columns={cols as any}
-                  />
-                </section>
-              );
-            }
-
-            case "products": {
-              const src = (b as any).source;
-              const list =
-                src === "all"
-                  ? productsAll
-                  : productsByCat[src?.category_id] ?? [];
-
-              const limited =
-                typeof (b as any).limit === "number" ? (list as Product[]).slice(0, (b as any).limit) : list;
-
-              // Use block view if set, otherwise theme default (or legacy display_mode)
-              const productView = ((b as any).view ?? getDefaultProductView(cfg)) as GridMode;
-
-              // Optional category navbar shown with products
-              const showNav = !!(b as any).show_category_nav;
-
-              // Block style override → theme default → variant mapping
-              const navStyle = resolveCategoryNavStyle(
-                cfg.theme?.variant as any,
-                (b as any).category_nav_style ?? (cfg as any)?.theme?.defaults?.category_nav_style ?? "auto"
-              );
-
-              return (
-                <section key={`b-${i}`} className="mb-6">
-                  {showNav && categories.length > 0 && (
-                    <div className="mb-4">
-                      <CategorySlider
-                        categories={[{ id: "all" as any, name: "All" }, ...categories] as any}
-                        activeId={"all"}
-                        basePath={`/${p.slug}`}           // landing for “All”
-                        categoryBasePath={`/${p.slug}/c`} // category pages
-                        theme={theme}
-                        navStyle={navStyle as any}
-                      />
-                    </div>
-                  )}
-
-                  <ProductViews
-                    products={limited as any}
-                    view={productView}
-                    theme={theme}
-                    slug={p.slug}
-                    whatsapp={p.wa_e164}
-                  />
-                </section>
-              );
-            }
-
-            case "text":
-              return (
-                <section key={`b-${i}`} className={`my-4 ${(b as any).align === "center" ? "text-center" : ""}`}>
-                  <div className="prose prose-neutral mx-auto">
-                    {(b as any).content_md /* swap to markdown renderer if you have one */}
-                  </div>
-                </section>
-              );
-
-            default:
-              return null;
+            return (
+              <section key={`b-${i}`} className="mb-6">
+                <CategoryListView
+                  categories={items}
+                  view={wallView as any}
+                  basePath={`/${p.slug}`}
+                  theme={theme}
+                  columns={cols as any}
+                />
+              </section>
+            );
           }
-        })}
-      </div>
-    </main>
-  );
+
+          case "products": {
+            const src = (b as any).source;
+            const list =
+              src === "all"
+                ? productsAll
+                : productsByCat[src?.category_id] ?? [];
+
+            const limited =
+              typeof (b as any).limit === "number"
+                ? (list as Product[]).slice(0, (b as any).limit)
+                : list;
+
+            const productView = ((b as any).view ?? getDefaultProductView(cfg)) as GridMode;
+            const showNav = !!(b as any).show_category_nav;
+
+            const navStyle = resolveCategoryNavStyle(
+              cfg.theme?.variant as any,
+              (b as any).category_nav_style ??
+                (cfg as any)?.theme?.defaults?.category_nav_style ??
+                "auto"
+            );
+
+            return (
+              <section key={`b-${i}`} className="mb-6">
+                {showNav && categories.length > 0 && (
+                  <div className="mb-4">
+                    <CategorySlider
+                      categories={
+                        [
+                          { id: "all" as any, name: "All" },
+                          ...categories,
+                        ] as any
+                      }
+                      activeId={"all"}
+                      basePath={`/${p.slug}`}
+                      categoryBasePath={`/${p.slug}/c`}
+                      theme={theme}
+                      navStyle={navStyle as any}
+                    />
+                  </div>
+                )}
+
+                <ProductViews
+                  products={limited as any}
+                  view={productView}
+                  theme={theme}
+                  slug={p.slug}
+                  whatsapp={p.wa_e164}
+                />
+              </section>
+            );
+          }
+
+          case "text":
+            return (
+              <section
+                key={`b-${i}`}
+                className={`my-4 ${
+                  (b as any).align === "center" ? "text-center" : ""
+                }`}
+              >
+                <div className="prose prose-neutral mx-auto">
+                  {(b as any).content_md}
+                </div>
+              </section>
+            );
+
+          default:
+            return null;
+        }
+      })}
+    </div>
+  </main>
+);
 }

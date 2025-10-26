@@ -59,7 +59,7 @@ export default function StorefrontHeader({
             style={{
               WebkitMaskImage: `linear-gradient(to bottom, white 70%, transparent 100%)`,
               maskImage: `linear-gradient(to bottom, white 70%, transparent 100%)`,
-              background: coverUrl ? undefined : `linear-gradient(to bottom, ${theme.surface} 0%, ${theme.background} 85%)`,
+              //background: coverUrl ? undefined : `linear-gradient(to bottom, ${theme.surface} 0%, ${theme.background} 85%)`,
             }}
           >
             {coverUrl ? (
@@ -71,7 +71,7 @@ export default function StorefrontHeader({
             {avatarUrl ? (
               <div className="mb-3 flex justify-center">
                 <div
-                  className={`overflow-hidden ring-2 ring-white`}
+                  className={`overflow-hidden`}
                   style={{ width: avatarDims.size, height: avatarDims.size, borderRadius: headerStyle === "large-circle" ? "9999px" : undefined }}
                 >
                   <Image
@@ -91,19 +91,20 @@ export default function StorefrontHeader({
               </h1>
 
               {bio ? (
-                <div className="mt-1 text-sm leading-relaxed" style={{ color: theme.muted, whiteSpace: "pre-wrap" }}>
+                <div className="mt-1 text-sm leading-relaxed" style={{ color: theme.text, whiteSpace: "pre-wrap" }}>
                   <ReactMarkdown>{bio}</ReactMarkdown>
                 </div>
               ) : null}
 
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                <SocialLinks socials={socials} mutedColor={theme.muted} accentColor={theme.accent} />
-                <CTAButtons
+                <SocialLinks socials={socials} mutedColor={theme.primary} accentColor={theme.accent} />
+                {/*<CTAButtons
                   whatsapp={whatsapp ?? undefined}
                   accent={theme.accent}
                   className={theme.button}
                   hoverStyle={{ backgroundColor: accentHover, transition: "background-color .15s ease" }}
                 />
+                */}
               </div>
             </div>
           </div>
@@ -116,12 +117,14 @@ export default function StorefrontHeader({
   return (
     <header
       className="mb-6 rounded-2xl"
-      style={{ background: `linear-gradient(to bottom, ${theme.surface} 0%, ${theme.background} 85%)` }}
+      style={{  backgroundColor: theme.surface
+      ? `${theme.surface}44` // adds ~90% opacity if theme.surface is hex (#RRGGBB)
+      : "rgba(255,255,255,0.6)",}}
     >
       <div className="flex flex-col items-center px-4 pt-6 pb-6 sm:pt-8 sm:pb-8">
         {avatarUrl ? (
           <div
-            className="relative -mt-2 mb-4 overflow-hidden ring-2 ring-white"
+            className="relative -mt-2 mb-4 overflow-hidden"
             style={{ width: avatarDims.size, height: avatarDims.size, borderRadius: headerStyle === "large-circle" ? "9999px" : undefined }}
           >
             <Image src={avatarUrl} alt={displayName} fill className={`object-cover ${avatarDims.cls}`} />
@@ -133,7 +136,7 @@ export default function StorefrontHeader({
         </h1>
 
         {bio ? (
-          <div className="mt-2 max-w-2xl text-center text-sm leading-relaxed break-words" style={{ color: theme.muted, whiteSpace: "pre-wrap" }}>
+          <div className="mt-2 max-w-2xl text-center text-sm leading-relaxed break-words" style={{ color: theme.text, whiteSpace: "pre-wrap" }}>
             <ReactMarkdown>{bio}</ReactMarkdown>
           </div>
         ) : null}

@@ -50,7 +50,7 @@ function computeToneStyles(
   theme: StorefrontTheme | any,
   colorSource: "primary" | "accent" = "primary"
 ): React.CSSProperties {
-  const base = (colorSource === "accent" ? theme?.accent : theme?.primary) ?? "#111827";
+  const base = (colorSource === "accent" ? theme?.accent : theme?.primary) ?? "#1118272f";
   const onBase = getReadableText(base);
 
   if (tone === "solid") {
