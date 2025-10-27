@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase-client";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import type { StorefrontConfig } from "@/lib/types";
+import MarkdownEditor from "@/components/site/MarkdownEditor";
 
 type Props = {
   initial: {
@@ -72,15 +73,15 @@ export default function ProfileForm({ initial }: Props) {
           Public storefront
         </label>
 
-        <label className="block sm:col-span-2">
-          <span className="text-sm font-medium">Bio</span>
-          <textarea
-            className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-            rows={3}
+        <div className="sm:col-span-2">
+          <MarkdownEditor
+            label="Bio"
             value={form.bio ?? ""}
-            onChange={(e) => update("bio", e.target.value)}
+            onChange={(md) => update("bio", md)}
+            placeholder="Write your bio using markdown (bold, italic, links...)"
+            rows={4}
           />
-        </label>
+        </div>
 
         <label className="block">
           <span className="text-sm font-medium">Instagram handle</span>

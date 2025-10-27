@@ -12,7 +12,6 @@ export default function NewStoreButton({ variant = "full" }: { variant?: "full" 
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
-console.log(variant);
 
   useEffect(() => {
     let mounted = true;

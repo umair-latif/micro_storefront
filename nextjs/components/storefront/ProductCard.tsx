@@ -5,6 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { type Product } from "@/lib/types";
 import SfButton from "@/components/storefront/SfButton";
+import ReactMarkdown from "react-markdown";
+import { SpanStatus } from "next/dist/trace";
+
 
 // Extended type for internal card variant
 type ProductCardVariant = "grid" | "list" | "grid-large" | "grid-clean" | "grid-ig";
@@ -116,9 +119,9 @@ export default function ProductCard({
             </div>
             {/* Show caption only if not large grid (grid_1) */}
             {product.caption && !isLargeGrid ? (
-              <div className="mt-0.5 line-clamp-2 text-xs" style={{ color: theme.muted }}>
-                {product.caption}
-              </div>
+              <span className="mt-0.5 line-clamp-2 text-xs" style={{ color: theme.muted }}>
+                <ReactMarkdown>{product.caption}</ReactMarkdown>
+              </span>
             ) : null}
           </WrapperTag>
 

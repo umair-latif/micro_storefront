@@ -12,6 +12,8 @@ import type { StorefrontConfig, Product, SocialsConfig } from "@/lib/types";
 import CTAButtons from "@/components/storefront/CTAButtons";
 import StorefrontHeader from "@/components/storefront/StorefrontHeader";
 import ProductGallery from "@/components/storefront/ProductGallery";
+import ReactMarkdown from "react-markdown";
+
 
 type ProfileRow = {
   id: string;
@@ -149,9 +151,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pa
             ) : null}
 
             {prod.caption ? (
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed" style={{ color: theme.text }}>
-                {prod.caption}
-              </p>
+              <ReactMarkdown>{prod.caption}</ReactMarkdown>
             ) : null}
 
             {/* CTAs (unified look) */}

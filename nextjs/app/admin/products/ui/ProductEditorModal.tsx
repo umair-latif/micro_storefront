@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase-client";
 import { X, Loader2, Upload, Trash2 } from "lucide-react";
+import MarkdownEditor from "@/components/site/MarkdownEditor";
+
 
 type Product = {
   id: string;
@@ -231,15 +233,15 @@ export default function ProductEditorModal({
                   />
                 </label>
 
-                <label className="block">
-                  <span className="text-sm font-medium">Caption</span>
-                  <textarea
-                    className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-                    rows={3}
-                    value={form.caption ?? ""}
-                    onChange={(e) => update("caption", e.target.value)}
-                  />
-                </label>
+                 <div className="sm:col-span-2">
+                          <MarkdownEditor
+                            label="Caption"
+                            value={form.caption ?? ""}
+                            onChange={(md) => update("caption", md)}
+                            placeholder="Caption/text"
+                            rows={4}
+                          />
+                        </div>
 
                 <label className="block">
                   <span className="text-sm font-medium">Instagram permalink</span>

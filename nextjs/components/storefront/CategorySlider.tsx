@@ -63,7 +63,6 @@ export default function CategorySlider({
   // choose final style (legacy prop wins for b/c)
   const override = (legacyStyle ?? navStyle) as CategoryNavStyle;
   const resolvedStyle = React.useMemo(() => resolveStyle(variant, override), [variant, override]);
-console.log("blablabalbalablabla");
 
   // optional: one-time debug so you can see what it resolved to
   React.useEffect(() => {

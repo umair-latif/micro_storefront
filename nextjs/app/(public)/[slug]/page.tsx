@@ -2,6 +2,8 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
+import ReactMarkdown from "react-markdown";
+
 
 import type { Metadata, ResolvingMetadata } from "next";
 import Link from "next/link";
@@ -309,7 +311,7 @@ return (
                 }`}
               >
                 <div className="prose prose-neutral mx-auto">
-                  {(b as any).content_md}
+                  <ReactMarkdown>{(b as any).content_md}</ReactMarkdown>
                 </div>
               </section>
             );

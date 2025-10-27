@@ -15,6 +15,8 @@ import {
 import type { LandingBlock, GridMode } from "@/lib/types";
 import { updateLandingBlocks, /* NEW: */ updateTopSection } from "../actions"; // ← add updateTopSection on server
 import { SortableItem } from "./_dnd/SortableItem";
+import MarkdownEditor from "@/components/site/MarkdownEditor";
+
 
 // ---------- curated presets (one-click) ----------
 export const LANDING_PRESETS: Array<{ id: string; name: string; blocks: LandingBlock[] }> = [
@@ -492,12 +494,15 @@ function BlockCard({
           {block.type === "text" && (
             <>
               <Row label="Content (Markdown)">
-                <textarea
+              <div className="sm:col-span-2">
+                <MarkdownEditor
+                  label="Text"
+                  value={block.content_md ?? ""}
+                  onChange={(md) => onChange({ content_md: md })}                  
+                  placeholder="Text"
                   rows={4}
-                  className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-                  value={(block as any).content_md ?? ""}
-                  onChange={(e) => onChange({ content_md: e.target.value } as any)}
                 />
+              </div>
               </Row>
               <Row label="Align">
                 <select
