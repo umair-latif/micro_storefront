@@ -3,8 +3,8 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
-function getServerClient() {
-  const cookieStore = cookies();
+async function getServerClient() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -22,14 +22,14 @@ function getServerClient() {
 }
 
 export async function serverPasswordSignIn(email: string, password: string) {
-  const supabase = getServerClient();
+  const supabase = await getServerClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { ok: false as const, error: error.message };
   return { ok: true as const };
 }
 
 export async function serverPasswordSignUp(email: string, password: string) {
-  const supabase = getServerClient();
+  const supabase = await getServerClient();
   const { error } = await supabase.auth.signUp({ email, password });
   // Note: if email confirmation is ON, user must confirm via email before sign-in works.
   if (error) return { ok: false as const, error: error.message };

@@ -67,7 +67,6 @@ export default function CategorySlider({
   // optional: one-time debug so you can see what it resolved to
   React.useEffect(() => {
     if (process.env.NODE_ENV !== "production") {
-      // eslint-disable-next-line no-console
       console.debug("[CategorySlider] variant:", variant, "override:", override, "→ resolved:", resolvedStyle);
     }
   }, [variant, override, resolvedStyle]);

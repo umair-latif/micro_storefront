@@ -1,11 +1,11 @@
-// middleware.ts
+// proxy.ts
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const res = NextResponse.next();
 
-  // Bind Supabase to this req/res so auth cookies are read/written correctly
+  // Bind Supabase to this req/res so auth cookies are read/written correctly.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,31 +21,29 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // Allow public admin auth routes
   const pathname = req.nextUrl.pathname;
-  const publicAdminRoutes = ["/admin/login"]; // add "/admin/register", etc. if you have them
+  const publicAdminRoutes = ["/admin/login"];
 
-  // If hitting /admin/* and not on a public route, require auth
   if (pathname.startsWith("/admin") && !publicAdminRoutes.includes(pathname)) {
     if (!user) {
       const url = req.nextUrl.clone();
       url.pathname = "/admin/login";
-      url.searchParams.set("next", pathname + req.nextUrl.search); // return after login
+      url.searchParams.set("next", pathname + req.nextUrl.search);
       return NextResponse.redirect(url);
     }
   }
 
-  // If already authed and hitting the login page, go to /admin
-  if (pathname.startsWith('/admin/(auth)/login') && user) {
-  return NextResponse.redirect(new URL('/admin', req.url));
+  if (pathname === "/admin/login" && user) {
+    return NextResponse.redirect(new URL("/admin", req.url));
   }
 
   return res;
 }
 
-// Only run on /admin/*
 export const config = {
   matcher: ["/admin/:path*"],
 };

@@ -4,8 +4,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
 
-function getServer() {
-  const cookieStore = cookies();
+async function getServer() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,7 +31,7 @@ function slugify(input: string) {
 }
 
 export async function createStoreAction(formData: FormData) {
-  const supabase = getServer();
+  const supabase = await getServer();
 
   const rawName = String(formData.get("display_name") || "").trim();
   const rawSlug = String(formData.get("slug") || "").trim();

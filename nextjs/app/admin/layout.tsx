@@ -8,7 +8,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-const supabase = createSupabaseServerClient();
+const supabase = await createSupabaseServerClient();
 const { data: { user } } = await supabase.auth.getUser();
 const isAuthed = !!user;
 
