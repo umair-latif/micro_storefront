@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from("analytics_clicks").insert({
     profile_id,
     product_id: product_id ?? null,

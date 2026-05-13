@@ -71,7 +71,7 @@ export async function generateMetadata(
   { params }: { params: { slug: string } },
   _parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, slug, display_name, bio, profile_img, header_img, storefront_config, is_public")
@@ -100,7 +100,7 @@ export default async function StorefrontPage({
   params: { slug: string };
   searchParams: { view?: "grid" | "list" | "links"; cat?: string };
 }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   // Robust profile fetch
   const { data: pFull } = await supabase

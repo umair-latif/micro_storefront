@@ -27,7 +27,7 @@ import ProductViews from "@/components/storefront/ProductViews";
 type Params = { slug: string; cat: string };
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: p } = await supabase
     .from("profiles")
     .select("id, display_name, header_img, storefront_config, is_public")
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function CategoryPage({ params }: { params: Params }) {
   const { slug, cat } = params;
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   // Profile
   const { data: p } = await supabase

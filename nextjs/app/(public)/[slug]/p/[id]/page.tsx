@@ -34,7 +34,7 @@ export async function generateMetadata(
   { params }: { params: Params },
   _parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data: prof } = await supabase
     .from("profiles")
@@ -67,7 +67,7 @@ export async function generateMetadata(
 
 export default async function ProductPage({ params, searchParams }: { params: Params; searchParams: { cat?: string } }) {
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const catParam = searchParams?.cat;
   let catLabel: string | null = null;
   // 1) profile (must be public)

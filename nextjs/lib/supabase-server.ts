@@ -4,8 +4,8 @@ import { cookies } from "next/headers";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export function createSupabaseServerClient() {
-  const cookieStore = cookies();
+export async function createSupabaseServerClient() {
+  const cookieStore = await cookies();
 
   // The cookie adapter MUST have set/remove functions, but for read-only 
   // Server Components, they must be stubbed out to prevent the Next.js error.

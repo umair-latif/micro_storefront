@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase-ssr-server";
 
 export async function getProfileByStoreParam(store: string | null) {
 if (!store) return null;
-const supabase = createServerSupabase();
+const supabase = await createServerSupabase();
 
 
 const { data: { user } } = await supabase.auth.getUser();

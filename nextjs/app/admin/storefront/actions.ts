@@ -19,7 +19,7 @@ function parseCfg(raw: unknown): StorefrontConfig {
 /* -------------------------------------------------------------------------- */
 export async function updateThemeAction(profileId: string, nextTheme: StorefrontTheme): Promise<Result> {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok: false, error: "Not authenticated." };
@@ -56,7 +56,7 @@ export async function updateThemeAction(profileId: string, nextTheme: Storefront
 /*                         updateLandingBlocks (hardened)                     */
 /* -------------------------------------------------------------------------- */
 export async function updateLandingBlocks(profileId: string, blocks: LandingBlock[]) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Not authenticated." };
 
@@ -91,7 +91,7 @@ export async function updateLandingOverridesAction(
   payload: { category_page_view?: GridMode }
 ): Promise<Result> {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok: false, error: "Not authenticated." };
@@ -135,7 +135,7 @@ export async function updateTopSection(
   top: { mode?: "header" | "hero"; header_style?: "small" | "large-square" | "large-circle" }
 ): Promise<Result> {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok: false, error: "Not authenticated." };
 
