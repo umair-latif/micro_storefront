@@ -1,11 +1,14 @@
 "use client";
 import { useEffect } from "react";
 
-export function useViewPing(storefrontId: number) {
+export function useViewPing(profileId: string) {
   useEffect(() => {
-    // POST to /api/analytics/view
-    fetch("/api/analytics/view", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storefrontId }) }).catch(() => {});
-  }, [storefrontId]);
+    fetch("/api/analytics/view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profileId }),
+    }).catch(() => {});
+  }, [profileId]);
 }
 
 export function trackCtaClick(payload: Record<string, any>) {

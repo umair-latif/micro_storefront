@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 import { ChevronDown } from "lucide-react";
@@ -26,7 +26,7 @@ export default function StoreSwitcher() {
   const currentStore = search.get("store");
 
   // Load stores owned by current user
-  async function loadStores() {
+  const loadStores = useCallback(async () => {
     setLoading(true);
     setErrorMsg(null);
 
@@ -55,7 +55,7 @@ export default function StoreSwitcher() {
       setProfiles((data ?? []) as Profile[]);
     }
     setLoading(false);
-  }
+  }, [supabase]);
 
   // Initial + reactive auth listener
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function StoreSwitcher() {
       mounted = false;
       sub?.subscription?.unsubscribe?.();
     };
-  }, [supabase]);
+  }, [loadStores, supabase]);
 
   // Active store
   const active = useMemo(() => {

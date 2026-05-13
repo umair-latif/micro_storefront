@@ -1,26 +1,29 @@
-// pages/api/analytics/route.ts (or wherever your Route Handler is)
-
-import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export async function POST(req: NextRequest) {
-  // Extract data from the request body
-  const { profile_id, product_id, cta, source, ua } = await req.json();
+  const { profile_id, product_id, cta, source, ua } = await req.json();
 
-  // 1. Instantiate the Supabase client by CALLING the function
-  const supabase = createSupabaseServerClient();
-
-  // 2. Use the client object to perform the query
-  const { error } = await supabase
-    .from('analytics_clicks')
-    .insert({ profile_id, product_id, cta, source, ua });
-
-  // Handle errors
-  if(error) {
-    console.error("Supabase insert error:", error);
-    return NextResponse.json({ ok:false, error:error.message }, { status: 400 });
+  if (!profile_id || !cta || !source) {
+    return NextResponse.json(
+      { ok: false, error: "profile_id, cta, and source are required" },
+      { status: 400 }
+    );
   }
 
-  // Success response
-  return NextResponse.json({ ok:true });
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase.from("analytics_clicks").insert({
+    profile_id,
+    product_id: product_id ?? null,
+    cta,
+    source,
+    ua: ua ?? req.headers.get("user-agent"),
+  });
+
+  if (error) {
+    console.error("Supabase insert error:", error);
+    return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json({ ok: true });
 }
