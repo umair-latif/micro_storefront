@@ -226,7 +226,7 @@ export default function BackgroundEditorRow({
       <p className="text-xs text-neutral-500 leading-relaxed">
         Paste a color (#fff), a CSS gradient, or upload an image.
         Uploading stores the image in <code>profile-images</code> and sets
-        background.type = "image".
+        background.type = &quot;image&quot;.
       </p>
     </div>
   );

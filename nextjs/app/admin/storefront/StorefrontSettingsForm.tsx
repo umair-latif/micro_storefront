@@ -65,7 +65,7 @@ export default function StorefrontSettingsForm({
           <option value="dark">Minimal Dark</option>
           <option value="custom">Custom Colors</option>
         </select>
-        <p className="mt-1 text-xs text-black/60">Use 'Custom Colors' to apply Primary/Accent values below to any variant.</p>
+        <p className="mt-1 text-xs text-black/60">Use &quot;Custom Colors&quot; to apply Primary/Accent values below to any variant.</p>
       </div>
 
       {/* Color overrides */}

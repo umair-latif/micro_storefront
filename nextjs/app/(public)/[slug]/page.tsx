@@ -196,12 +196,6 @@ export default async function StorefrontPage({
       headerStyle={headerStyle}
     />
   );
-console.log("THEME BG →", {
-  type: theme.backgroundType,
-  bg: theme.background,
-  img: theme.backgroundImage,
-  css: theme.backgroundCSS,
-});
 // Build the style for the page background
 const pageBgStyle =
   theme.backgroundType === "image" || theme.backgroundType === "gradient"
