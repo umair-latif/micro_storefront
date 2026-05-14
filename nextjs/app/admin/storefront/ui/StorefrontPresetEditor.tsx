@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { CheckCircle2, Loader2, TriangleAlert } from "lucide-react";
+import { CheckCircle2, ExternalLink, Loader2, TriangleAlert } from "lucide-react";
 import type {
   LayoutPreset,
   StorefrontConfig,
@@ -154,24 +154,42 @@ export default function StorefrontPresetEditor({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-neutral-900">Storefront Presets</h2>
-        <div className="inline-flex h-5 items-center gap-2 text-xs">
-          {saving ? (
-            <span className="inline-flex items-center gap-1 text-neutral-600">
-              <Loader2 className="h-4 w-4 animate-spin" /> Saving...
-            </span>
-          ) : null}
-          {!saving && savedTick > 0 ? (
-            <span className="inline-flex items-center gap-1 text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" /> Saved
-            </span>
-          ) : null}
-          {error ? (
-            <span className="inline-flex items-center gap-1 text-amber-700">
-              <TriangleAlert className="h-4 w-4" /> {error}
-            </span>
-          ) : null}
+      <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-neutral-900">Storefront Setup</h2>
+            <p className="mt-1 text-xs text-neutral-500">
+              {selected.storeType} · {selected.layout} · {selected.theme}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href={publicUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl border border-black/10 px-3 py-2 text-sm hover:bg-neutral-50"
+            >
+              <ExternalLink className="h-4 w-4" />
+              View store
+            </a>
+            <div className="inline-flex h-5 items-center gap-2 text-xs">
+              {saving ? (
+                <span className="inline-flex items-center gap-1 text-neutral-600">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Saving...
+                </span>
+              ) : null}
+              {!saving && savedTick > 0 ? (
+                <span className="inline-flex items-center gap-1 text-emerald-700">
+                  <CheckCircle2 className="h-4 w-4" /> Saved
+                </span>
+              ) : null}
+              {error ? (
+                <span className="inline-flex items-center gap-1 text-amber-700">
+                  <TriangleAlert className="h-4 w-4" /> {error}
+                </span>
+              ) : null}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -216,16 +234,6 @@ export default function StorefrontPresetEditor({
           />
         </div>
       </PresetSection>
-
-      <aside className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
-        <div className="text-sm font-semibold text-neutral-900">Preview Notes</div>
-        <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-          <PreviewRow label="Store type" value={selected.storeType} />
-          <PreviewRow label="Layout" value={selected.layout} />
-          <PreviewRow label="Theme" value={selected.theme} />
-          <PreviewRow label="Public URL" value={publicUrl} />
-        </dl>
-      </aside>
     </div>
   );
 }
@@ -272,15 +280,6 @@ function OptionGrid({
           </button>
         );
       })}
-    </div>
-  );
-}
-
-function PreviewRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs text-neutral-500">{label}</dt>
-      <dd className="truncate font-medium text-neutral-900">{value}</dd>
     </div>
   );
 }

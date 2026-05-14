@@ -94,17 +94,26 @@ export default async function StorefrontPage({ searchParams }: { searchParams: P
         publicUrl={`/${profile.slug}`}
       />
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-sm font-semibold text-neutral-900">Customize Layout</h2>
-          <p className="text-xs text-neutral-500">Fine-tune blocks after choosing presets.</p>
+      <details className="rounded-2xl border border-black/10 bg-white shadow-sm">
+        <summary className="cursor-pointer list-none px-4 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold text-neutral-900">Advanced Layout</h2>
+              <p className="mt-1 text-xs text-neutral-500">Fine-tune individual page sections.</p>
+            </div>
+            <span className="rounded-full border border-black/10 px-3 py-1 text-xs text-neutral-600">
+              Optional
+            </span>
+          </div>
+        </summary>
+        <div className="border-t border-black/10 p-4">
+          <LandingEditor
+            profileId={profile.id}
+            initialBlocks={initialBlocks}
+            initialTopSection={config.top_section}
+          />
         </div>
-        <LandingEditor
-          profileId={profile.id}
-          initialBlocks={initialBlocks}
-          initialTopSection={config.top_section}
-        />
-      </section>
+      </details>
     </div>
   );
 }

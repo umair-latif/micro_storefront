@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   GripVertical, Eye, EyeOff, ChevronDown, ChevronUp, Layers,
-  ImageIcon, Frame, Grid, List, Link as LinkIcon, Hash, Type, Wand2, Loader2, CheckCircle2, TriangleAlert
+  ImageIcon, Frame, Grid, List, Link as LinkIcon, Type, Loader2, CheckCircle2, TriangleAlert
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors
@@ -17,35 +17,6 @@ import { updateLandingBlocks, /* NEW: */ updateTopSection } from "../actions"; /
 import { SortableItem } from "./_dnd/SortableItem";
 import MarkdownEditor from "@/components/site/MarkdownEditor";
 
-
-// ---------- curated presets (one-click) ----------
-export const LANDING_PRESETS: Array<{ id: string; name: string; blocks: LandingBlock[] }> = [
-  {
-    id: "business-card",
-    name: "Business Card",
-    blocks: [
-      { type: "hero", show_avatar: true, show_socials: true, show_ctas: true },
-    ],
-  },
-  {
-    id: "catalog",
-    name: "Catalog",
-    blocks: [
-      { type: "hero", dense: true, show_ctas: true },
-      { type: "products", source: "all", view: "grid_3", show_price: true },
-    ],
-  },
-  {
-    id: "story-highlights",
-    name: "Story + Highlights",
-    blocks: [
-      { type: "hero", show_avatar: true, show_socials: true },
-      { type: "text", content_md: "### Featured Collections", align: "start" },
-      { type: "categories_wall", columns: 3, limit: 6 },
-      { type: "products", source: "all", view: "links", limit: 8, cta: "product" },
-    ],
-  },
-];
 
 // Local type for top-of-page config (mirrors cfg.top_section)
 type TopSection = {
@@ -147,8 +118,6 @@ export default function LandingEditor({
     onChangeBlocks(next);
   }
 
-  function applyPreset(preset: LandingBlock[]) { onChangeBlocks(preset); }
-
   // UX saved badge timer
   useEffect(() => {
     if (!savedTick) return;
@@ -210,24 +179,6 @@ export default function LandingEditor({
         <p className="mt-2 text-xs text-neutral-500">
           Choose whether to show a compact header or a full-bleed hero, and pick the avatar style.
         </p>
-      </section>
-
-      {/* presets */}
-      <section className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
-        <div className="mb-3 text-sm font-medium text-neutral-800">Presets</div>
-        <div className="flex flex-wrap gap-2">
-          {LANDING_PRESETS.map(p => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => applyPreset(p.blocks)}
-              className="rounded-xl border border-black/10 px-3 py-2 text-sm transition hover:bg-neutral-50"
-              title={p.name}
-            >
-              <Wand2 className="mr-2 inline h-4 w-4" /> {p.name}
-            </button>
-          ))}
-        </div>
       </section>
 
       {/* add block palette */}
