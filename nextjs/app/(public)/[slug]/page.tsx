@@ -57,12 +57,36 @@ function toBlocks(cfg: StorefrontConfig | null | undefined): LandingBlock[] {
   const legacyLanding = (c.landing_page as any) ?? "products";
 
   if (legacyLanding === "hero-only") return [hero];
+  if (legacyLanding === "categories") {
+    return [
+      hero,
+      { type: "categories_wall", view: "grid", columns: 3 },
+    ];
+  }
 
   // default products
   return [
     hero,
     { type: "products", source: "all", view: ((c.display_mode as GridMode) ?? "grid_3"), show_price: true },
   ];
+}
+
+function legacyFromLayoutPreset(cfg: StorefrontConfig): StorefrontConfig {
+  if (!cfg.layout_preset) return cfg;
+  if (cfg.landing_page || cfg.display_mode) return cfg;
+
+  switch (cfg.layout_preset) {
+    case "business_card":
+      return { ...cfg, landing_page: "hero-only" };
+    case "link_in_bio":
+      return { ...cfg, landing_page: "products", display_mode: "links" };
+    case "collections_first":
+      return { ...cfg, landing_page: "categories", show_categories: true };
+    case "featured_drop":
+    case "product_showcase":
+    default:
+      return { ...cfg, landing_page: "products", display_mode: "grid" };
+  }
 }
 
 /* --------------------------- Metadata (public) ---------------------------- */
@@ -136,13 +160,13 @@ export default async function StorefrontPage({
   }
 
   // Normalize legacy keys → StorefrontConfig
-  const cfg: StorefrontConfig = {
+  const cfg: StorefrontConfig = legacyFromLayoutPreset({
     ...cfgObj,
     theme: cfgObj.theme ?? undefined,
     display_mode: cfgObj.display_mode ?? cfgObj.view ?? undefined,
     show_categories: cfgObj.show_categories ?? cfgObj.showCategories ?? undefined,
     landing_page: (cfgObj.landing_page ?? cfgObj.landingPage ?? cfgObj.landing) ?? undefined,
-  };
+  });
 
   // Resolve theme
   const theme = getThemeFromConfig(cfg);

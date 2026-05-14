@@ -112,6 +112,21 @@ export type LandingBlock =
 /* ============================ Storefront cfg ============================= */
 
 export type StorefrontDisplayMode = GridMode;
+export type StoreTypePreset =
+  | "creator"
+  | "artist"
+  | "shop"
+  | "services"
+  | "food"
+  | "pod"
+  | "portfolio_links";
+
+export type LayoutPreset =
+  | "business_card"
+  | "link_in_bio"
+  | "product_showcase"
+  | "collections_first"
+  | "featured_drop";
 
 export type StorefrontLanding =
   | "products"
@@ -120,6 +135,8 @@ export type StorefrontLanding =
   | "business-card"; // alias of hero-only
 
 export type StorefrontConfig = {
+  store_type?: StoreTypePreset;
+  layout_preset?: LayoutPreset;
   theme?: StorefrontTheme;
 
   // Block-based rendering (public page + admin builder)

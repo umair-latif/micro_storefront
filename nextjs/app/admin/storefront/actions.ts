@@ -14,6 +14,61 @@ function parseCfg(raw: unknown): StorefrontConfig {
   return raw as StorefrontConfig;
 }
 
+async function readOwnedProfile(profileId: string) {
+  const supabase = await createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { supabase, user: null, current: null, error: "Not authenticated." };
+
+  const { data: current, error } = await supabase
+    .from("profiles")
+    .select("id, owner_uid, storefront_config")
+    .eq("id", profileId)
+    .maybeSingle();
+
+  if (error) return { supabase, user, current: null, error: error.message };
+  if (!current) return { supabase, user, current: null, error: "Profile not found." };
+  if (current.owner_uid && current.owner_uid !== user.id) {
+    return { supabase, user, current: null, error: "You do not have permission to update this store." };
+  }
+
+  return { supabase, user, current, error: null };
+}
+
+export async function updateStorefrontConfigAction(
+  profileId: string,
+  patch: StorefrontConfig
+): Promise<Result> {
+  try {
+    const { supabase, user, current, error } = await readOwnedProfile(profileId);
+    if (error || !user || !current) return { ok: false, error: error ?? "Unable to update storefront." };
+
+    const cfg = parseCfg(current.storefront_config);
+    const merged: StorefrontConfig = {
+      ...cfg,
+      ...patch,
+      theme: {
+        ...(typeof cfg.theme === "string" ? { variant: cfg.theme as any } : cfg.theme ?? {}),
+        ...(typeof patch.theme === "string" ? { variant: patch.theme as any } : patch.theme ?? {}),
+        palette: {
+          ...((typeof cfg.theme === "string" ? {} : cfg.theme?.palette) ?? {}),
+          ...((typeof patch.theme === "string" ? {} : patch.theme?.palette) ?? {}),
+        },
+      },
+    };
+
+    const { error: writeErr } = await supabase
+      .from("profiles")
+      .update({ storefront_config: merged })
+      .eq("id", profileId)
+      .eq("owner_uid", user.id);
+
+    if (writeErr) return { ok: false, error: writeErr.message };
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? "Unknown error" };
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 /*                            updateThemeAction (hardened)                    */
 /* -------------------------------------------------------------------------- */

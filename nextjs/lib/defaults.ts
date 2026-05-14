@@ -1,6 +1,8 @@
 import type { StorefrontConfig } from "./types";
 
 export const DEFAULT_STOREFRONT_CONFIG: StorefrontConfig = {
+  store_type: "shop",
+  layout_preset: "product_showcase",
   display_mode: "grid",
   show_categories: true,
   sort: "newest",
