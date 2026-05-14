@@ -7,7 +7,8 @@ import LandingEditor from "./ui/LandingEditor";
 
 export const dynamic = "force-dynamic";
 
-export default async function StorefrontPage({ searchParams }: { searchParams: { store?: string } }) {
+export default async function StorefrontPage({ searchParams }: { searchParams: Promise<{ store?: string }> }) {
+  const resolvedSearchParams = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -15,7 +16,7 @@ export default async function StorefrontPage({ searchParams }: { searchParams: {
     notFound();
   }
 
-  const store = (searchParams.store ?? "").trim();
+  const store = (resolvedSearchParams.store ?? "").trim();
   if (!store) {
     return (
       <div className="space-y-2">

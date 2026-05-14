@@ -68,14 +68,15 @@ function toBlocks(cfg: StorefrontConfig | null | undefined): LandingBlock[] {
 /* --------------------------- Metadata (public) ---------------------------- */
 
 export async function generateMetadata(
-  { params }: { params: { slug: string } },
+  { params }: { params: Promise<{ slug: string }> },
   _parent: ResolvingMetadata
 ): Promise<Metadata> {
+  const { slug } = await params;
   const supabase = await createSupabaseServerClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, slug, display_name, bio, profile_img, header_img, storefront_config, is_public")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .eq("is_public", true)
     .maybeSingle();
 
@@ -97,16 +98,17 @@ export default async function StorefrontPage({
   params,
   searchParams,
 }: {
-  params: { slug: string };
-  searchParams: { view?: "grid" | "list" | "links"; cat?: string };
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ view?: "grid" | "list" | "links"; cat?: string }>;
 }) {
+  const { slug } = await params;
   const supabase = await createSupabaseServerClient();
 
   // Robust profile fetch
   const { data: pFull } = await supabase
     .from("profiles")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .eq("is_public", true)
     .maybeSingle();
 

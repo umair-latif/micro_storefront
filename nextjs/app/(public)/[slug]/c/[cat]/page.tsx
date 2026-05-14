@@ -26,12 +26,13 @@ import ProductViews from "@/components/storefront/ProductViews";
 
 type Params = { slug: string; cat: string };
 
-export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+  const { slug } = await params;
   const supabase = await createSupabaseServerClient();
   const { data: p } = await supabase
     .from("profiles")
     .select("id, display_name, header_img, storefront_config, is_public")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .eq("is_public", true)
     .maybeSingle();
 
@@ -45,8 +46,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-export default async function CategoryPage({ params }: { params: Params }) {
-  const { slug, cat } = params;
+export default async function CategoryPage({ params }: { params: Promise<Params> }) {
+  const { slug, cat } = await params;
   const supabase = await createSupabaseServerClient();
 
   // Profile
