@@ -19,12 +19,14 @@ export default function StoreIdentityBar({
   storeName,
   avatarUrl,
   backHref,
+  homeHref,
   contextLabel,
   theme,
 }: {
   storeName: string;
   avatarUrl: string | null;
   backHref: string;
+  homeHref?: string;
   contextLabel?: string | null;
   theme: any;
 }) {
@@ -51,29 +53,31 @@ export default function StoreIdentityBar({
           <ArrowLeft className="h-5 w-5" />
         </Link>
 
-        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border" style={{ borderColor: "rgba(0,0,0,.1)" }}>
-          {avatarUrl ? (
-            <Image src={avatarUrl} alt={storeName} fill sizes="40px" className="object-cover" />
-          ) : (
-            <div
-              className="flex h-full w-full items-center justify-center text-sm font-semibold"
-              style={{ background: primary, color: surface }}
-            >
-              {initials(storeName) || "S"}
-            </div>
-          )}
-        </div>
-
-        <div className="min-w-0">
-          <div className="truncate text-sm font-semibold leading-5" style={{ color: text }}>
-            {storeName}
+        <Link href={homeHref ?? backHref} className="flex min-w-0 items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20">
+          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border" style={{ borderColor: "rgba(0,0,0,.1)" }}>
+            {avatarUrl ? (
+              <Image src={avatarUrl} alt={storeName} fill sizes="40px" className="object-cover" />
+            ) : (
+              <div
+                className="flex h-full w-full items-center justify-center text-sm font-semibold"
+                style={{ background: primary, color: surface }}
+              >
+                {initials(storeName) || "S"}
+              </div>
+            )}
           </div>
-          {contextLabel ? (
-            <div className="truncate text-xs leading-4" style={{ color: muted }}>
-              {contextLabel}
+
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold leading-5" style={{ color: text }}>
+              {storeName}
             </div>
-          ) : null}
-        </div>
+            {contextLabel ? (
+              <div className="truncate text-xs leading-4" style={{ color: muted }}>
+                {contextLabel}
+              </div>
+            ) : null}
+          </div>
+        </Link>
       </div>
     </header>
   );

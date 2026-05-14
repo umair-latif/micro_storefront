@@ -101,7 +101,8 @@ export default async function ProductPage({
           storeName={p.display_name}
           avatarUrl={p.profile_img}
           backHref={backHref}
-          contextLabel="Product detail"
+          homeHref={`/${p.slug}`}
+          contextLabel={prod.title}
           theme={theme}
         />
 

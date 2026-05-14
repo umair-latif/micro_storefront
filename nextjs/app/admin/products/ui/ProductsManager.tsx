@@ -64,7 +64,7 @@ export default function ProductsManager({ profileId }: { profileId: string }) {
     setErrorMsg(null);
     const { data, error } = await supabase
       .from("products")
-      .insert({ profile_id: profileId, title: "Untitled", price: 0, visible: true })
+      .insert({ profile_id: profileId, title: "Untitled", price: null, visible: true })
       .select("id, profile_id, title, price, caption, thumb_url, instagram_permalink, cta_label, cta_url, category_id, visible")
       .single();
 

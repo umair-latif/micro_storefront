@@ -1,13 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Link as LinkIcon, Check } from "lucide-react";
+import { createClient } from "@/lib/supabase-client";
 
 export default function CopyStoreURL({ compact = false, url }: { compact?: boolean; url?: string }) {
+  const search = useSearchParams();
+  const supabase = useMemo(() => createClient(), []);
   const [ok, setOk] = useState(false);
+  const [slug, setSlug] = useState<string | null>(null);
+  const store = search.get("store");
+
+  useEffect(() => {
+    let mounted = true;
+    if (!store) {
+      setSlug(null);
+      return;
+    }
+
+    supabase
+      .from("profiles")
+      .select("slug")
+      .or(`id.eq.${store},slug.eq.${store}`)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (mounted) setSlug(data?.slug ?? store);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [store, supabase]);
 
   async function copy() {
-    const toCopy = url ?? window.location.origin + window.location.pathname.replace(/^\/admin.*/, "");
+    const toCopy = url ?? (slug ? `${window.location.origin}/${encodeURIComponent(slug)}` : window.location.origin);
     await navigator.clipboard.writeText(toCopy);
     setOk(true);
     setTimeout(() => setOk(false), 1000);

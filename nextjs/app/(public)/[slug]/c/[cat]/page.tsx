@@ -101,6 +101,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
           storeName={p.display_name}
           avatarUrl={p.profile_img}
           backHref={`/${slug}`}
+          homeHref={`/${slug}`}
           contextLabel={activeCat.name}
           theme={theme}
         />
