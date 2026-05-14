@@ -29,6 +29,7 @@ export default function SocialLinks({
     facebook: Facebook,
     youtube: Youtube,
     twitter: Twitter,
+    x: Twitter,
     linkedin: Linkedin,
     website: Globe,
     mail: Mail,
@@ -56,7 +57,7 @@ export default function SocialLinks({
         if (key === "facebook" && !href.startsWith("http"))
           href = `https://facebook.com/${href}`;
         if (key === "x" && !href.startsWith("http"))
-          href = `https://x.com/${href}`;
+          href = `https://x.com/${href.replace(/^@/, "")}`;
         if (key === "linkedin" && !href.startsWith("http"))
           href = `https://linkedin.com/in/${href}`;
         if (key === "whatsapp" && !href.startsWith("http"))

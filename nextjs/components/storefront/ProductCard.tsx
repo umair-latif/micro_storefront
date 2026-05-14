@@ -140,16 +140,16 @@ export default function ProductCard({
           {/* --- Full-Width CTA Buttons Section --- */}
           {(hasWhatsapp || hasInstagram || hasProductCustomCta) && (
             <div className="mt-3 grid grid-cols-1 gap-2">
-              {hasWhatsapp ? (
+              {hasProductCustomCta ? (
                 <SfButton
-                  href={wa!}
+                  href={product.cta_url!}
                   theme={theme}
                   size="md"
                   fullWidth
-                  colorSource="accent" // WA stands out on accent
+                  colorSource="accent"
                   btnTone="solid"
                 >
-                  WhatsApp
+                  {product.cta_label}
                 </SfButton>
               ) : null}
 
@@ -165,17 +165,15 @@ export default function ProductCard({
                 </SfButton>
               ) : null}
 
-              {/* Keep parity with previous behavior: show custom CTA here as well */}
-              {hasProductCustomCta ? (
+              {hasWhatsapp ? (
                 <SfButton
-                  href={product.cta_url!}
+                  href={wa!}
                   theme={theme}
                   size="md"
                   fullWidth
-                  colorSource="accent"
-                  btnTone="solid"
+                  btnTone="outline"
                 >
-                  {product.cta_label}
+                  WhatsApp
                 </SfButton>
               ) : null}
             </div>
