@@ -270,9 +270,9 @@ export default function ThemeTab({
         </button>
         {openAdvanced && (
           <div className="grid gap-3 sm:grid-cols-2">
-            {/* NEW: Category page product view override (global) */}
+            {/* Collection page product view override (global) */}
             {typeof onSetCategoryPageView === "function" && (
-              <AdvancedRow label="Category Page Product View (override)">
+              <AdvancedRow label="Collection Page Product View (override)">
                 <select
                   className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
                   value={categoryPageView ?? ""}
@@ -290,7 +290,7 @@ export default function ThemeTab({
                   <option value="links">Links</option>
                 </select>
                 <p className="mt-1 text-xs text-neutral-500">
-                  Controls how products render on category pages (<code>/slug/c/[cat]</code>). Does not affect Product blocks on the landing page.
+                  Controls how products render on collection pages (<code>/slug/c/[cat]</code>). Does not affect Product blocks on the landing page.
                 </p>
               </AdvancedRow>
             )}

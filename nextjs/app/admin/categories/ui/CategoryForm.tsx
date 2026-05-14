@@ -48,7 +48,7 @@ export default function CategoryForm(props: Props) {
   async function handleSave() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setErr("Please enter a category name.");
+      setErr("Please enter a collection name.");
       return;
     }
     setErr(null);
@@ -173,7 +173,7 @@ export default function CategoryForm(props: Props) {
   return (
     <div className={`rounded-2xl border border-black/10 bg-white p-3 shadow-sm ${props.className ?? ""}`}>
       <div className="mb-2 text-sm font-medium">
-        {props.mode === "edit" ? "Edit category" : "New category"}
+        {props.mode === "edit" ? "Edit collection" : "New collection"}
       </div>
 
       {err ? (
@@ -194,7 +194,7 @@ export default function CategoryForm(props: Props) {
         </label>
 
         <div className="block">
-          <span className="text-sm">Cover image</span>
+          <span className="text-sm">Collection cover</span>
           <div className="mt-1">
             <div className="relative aspect-video overflow-hidden rounded-xl bg-neutral-100">
               {cover ? (

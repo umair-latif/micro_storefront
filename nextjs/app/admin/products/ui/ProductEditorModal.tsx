@@ -277,9 +277,9 @@ export default function ProductEditorModal({
                   </label>
                 </div>
 
-                {/* Category selector */}
+                {/* Collection selector */}
                 <label className="block">
-                  <span className="text-sm font-medium">Category</span>
+                  <span className="text-sm font-medium">Collection</span>
                   <select
                     className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm bg-white"
                     value={form.category_id ?? ""}

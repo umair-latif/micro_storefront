@@ -235,9 +235,9 @@ export default function LandingEditor({
         <div className="mb-3 text-sm font-medium text-neutral-800">Add block</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
           <AddTile icon={Frame} label="Hero" onClick={() => addBlock({ type: "hero", show_avatar: true, show_socials: true, show_ctas: true })} />
-          <AddTile icon={ImageIcon} label="Categories Wall (grid)" onClick={() => addBlock({ type: "categories_wall", view: "grid", columns: 3 })} />
-          <AddTile icon={List} label="Categories Wall (list)" onClick={() => addBlock({ type: "categories_wall", view: "list" })} />
-          <AddTile icon={LinkIcon} label="Categories Wall (links)" onClick={() => addBlock({ type: "categories_wall", view: "links" })} />
+          <AddTile icon={ImageIcon} label="Collections Wall (grid)" onClick={() => addBlock({ type: "categories_wall", view: "grid", columns: 3 })} />
+          <AddTile icon={List} label="Collections Wall (list)" onClick={() => addBlock({ type: "categories_wall", view: "list" })} />
+          <AddTile icon={LinkIcon} label="Collections Wall (links)" onClick={() => addBlock({ type: "categories_wall", view: "links" })} />
           <AddTile icon={Grid} label="Products (grid)" onClick={() => addBlock({ type: "products", source: "all", view: "grid_3", show_price: true })} />
           <AddTile icon={List} label="Products (list)" onClick={() => addBlock({ type: "products", source: "all", view: "list" })} />
           <AddTile icon={LinkIcon} label="Products (links)" onClick={() => addBlock({ type: "products", source: "all", view: "links" })} />
@@ -331,7 +331,7 @@ function BlockCard({
           <Icon className="h-4 w-4" />
           <span>
             {block.type === "hero" && "Hero"}
-            {block.type === "categories_wall" && "Category cover wall"}
+            {block.type === "categories_wall" && "Collection cover wall"}
             {block.type === "products" && "Products"}
             {block.type === "text" && "Text"}
           </span>
@@ -415,11 +415,11 @@ function BlockCard({
                   onChange={(e) => onChange({ source: e.target.value === "all" ? "all" : { category_id: "" } } as any)}
                 >
                   <option value="all">All products</option>
-                  <option value="category">Specific category</option>
+                  <option value="category">Specific collection</option>
                 </select>
               </Row>
               {typeof (block as any).source !== "string" && (
-                <Row label="Category ID">
+                <Row label="Collection ID">
                   <input
                     className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
                     value={(block as any).source?.category_id ?? ""}
@@ -467,7 +467,7 @@ function BlockCard({
                   <option value="none">None</option>
                 </select>
               </Row>
-              <Row label="Show category navbar above products">
+              <Row label="Show collection navbar above products">
                 <Switch
                   checked={(block as any).show_category_nav ?? false}
                   onChange={(v) => onChange({ show_category_nav: v } as any)}

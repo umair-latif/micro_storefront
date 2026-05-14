@@ -324,7 +324,7 @@ export default function StorefrontSettings({
     
     const landingOptions = [
         { value: "products", label: "Products" },
-        { value: "categories", label: "Categories" },
+        { value: "categories", label: "Collections" },
         { value: "hero-only", label: "Business Card" },
     ] as const;
 
@@ -507,13 +507,13 @@ export default function StorefrontSettings({
                                 </div>
                                 <p className="mt-2 text-xs text-neutral-600">
                                     <strong>Products:</strong> hero + products.{" "}
-                                    <strong>Categories:</strong> hero + category directory.{" "}
+                                    <strong>Collections:</strong> hero + collection directory.{" "}
                                     <strong>Business Card:</strong> full-screen hero with avatar, socials & CTAs.
                                 </p>
                             </Section>
 
-                            {/* Categories Section */}
-                            <Section title="Categories" description="Show categories as scrollable chips below the header">
+                            {/* Collections Section */}
+                            <Section title="Collections" description="Show collections as scrollable chips below the header">
                                 <label className="inline-flex items-center gap-2 text-sm">
                                     <input
                                         type="checkbox"
@@ -521,7 +521,7 @@ export default function StorefrontSettings({
                                         onChange={(e) => onChange("show_categories", e.currentTarget.checked)}
                                         className="h-4 w-4 rounded border-black/20"
                                     />
-                                    Show categories
+                                    Show collections
                                 </label>
                             </Section>
 

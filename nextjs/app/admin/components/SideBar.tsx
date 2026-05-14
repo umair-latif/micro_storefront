@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase-client";
 
 const nav = [
 { href: "/admin/profile", label: "Store Profile", icon: LayoutGrid },
-{ href: "/admin/categories", label: "Categories", icon: FolderKanban },
+{ href: "/admin/categories", label: "Collections", icon: FolderKanban },
 { href: "/admin/products", label: "Products", icon: ShoppingBag },
 { href: "/admin/storefront", label: "Storefront", icon: Palette },
 ];

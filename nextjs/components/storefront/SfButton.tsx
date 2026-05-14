@@ -40,7 +40,12 @@ type Common = {
   colorSource?: "primary" | "accent";
 };
 
-type AnchorProps = Common & { href: string; onClick?: never };
+type AnchorProps = Common & {
+  href: string;
+  onClick?: never;
+  target?: React.HTMLAttributeAnchorTarget;
+  rel?: string;
+};
 type ButtonElProps = Common & { href?: never; onClick?: React.ButtonHTMLAttributes<HTMLButtonElement>["onClick"] };
 type Props = AnchorProps | ButtonElProps;
 
@@ -93,11 +98,29 @@ function useButtonDerivatives(props: Props) {
   return { cls, mergedStyle, toneFinal };
 }
 
+function isExternalHref(href: string) {
+  return /^(https?:|mailto:|tel:|\/\/)/i.test(href);
+}
+
 export default function SfButton(props: Props) {
   const { cls, mergedStyle } = useButtonDerivatives(props);
 
   if ("href" in props && props.href) {
-    const { href, children } = props;
+    const { href, children, target, rel } = props as AnchorProps;
+    if (isExternalHref(href)) {
+      return (
+        <a
+          href={href}
+          className={cls}
+          style={mergedStyle}
+          target={target ?? "_blank"}
+          rel={rel ?? "noopener noreferrer"}
+        >
+          {children}
+        </a>
+      );
+    }
+
     return (
       <Link href={href} className={cls} style={mergedStyle}>
         {children}

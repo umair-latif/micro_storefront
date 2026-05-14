@@ -103,7 +103,7 @@ export default function StorefrontSettingsForm({
         <label className="block text-sm font-medium">Landing page</label>
         <select name="landing" defaultValue={landing} className="mt-1 w-full rounded-md border p-2">
           <option value="products">Products (shop)</option>
-          <option value="categories">Categories (directory)</option>
+          <option value="categories">Collections (directory)</option>
           <option value="hero-only">Hero only (business card)</option>
         </select>
       </div>
