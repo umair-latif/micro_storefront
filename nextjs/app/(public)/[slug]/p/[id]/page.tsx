@@ -31,15 +31,16 @@ type ProfileRow = {
 type Params = { slug: string; id: string };
 
 export async function generateMetadata(
-  { params }: { params: Params },
+  { params }: { params: Promise<Params> },
   _parent: ResolvingMetadata
 ): Promise<Metadata> {
+  const { slug, id } = await params;
   const supabase = await createSupabaseServerClient();
 
   const { data: prof } = await supabase
     .from("profiles")
     .select("id, slug, display_name, bio, header_img, storefront_config, is_public")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .is("is_public", true)
     .maybeSingle();
 
@@ -48,7 +49,7 @@ export async function generateMetadata(
   const { data: product } = await supabase
     .from("products")
     .select("id, title, caption, thumb_url, visible")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("profile_id", prof.id)
     .eq("visible", true)
     .maybeSingle();
@@ -65,16 +66,18 @@ export async function generateMetadata(
   };
 }
 
-export default async function ProductPage({ params, searchParams }: { params: Params; searchParams: { cat?: string } }) {
+export default async function ProductPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ cat?: string }> }) {
 
+  const { slug, id } = await params;
+  const resolvedSearchParams = await searchParams;
   const supabase = await createSupabaseServerClient();
-  const catParam = searchParams?.cat;
+  const catParam = resolvedSearchParams?.cat;
   let catLabel: string | null = null;
   // 1) profile (must be public)
   const { data: p } = await supabase
     .from("profiles")
     .select("id, slug, display_name, bio, profile_img, header_img, wa_e164, socials_config, storefront_config, is_public")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .is("is_public", true)
     .maybeSingle();
 
@@ -84,7 +87,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pa
   const { data: prod } = await supabase
     .from("products")
     .select("id, title, caption, price, thumb_url, visible, instagram_permalink, cta_label, cta_url")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("profile_id", p.id)
     .eq("visible", true)
     .maybeSingle();

@@ -6,8 +6,9 @@ export const dynamic = "force-dynamic";
 
 export default async function ProductsPage({
   searchParams,
-}: { searchParams: Record<string, string | string[] | undefined> }) {
-  const store = (searchParams.store as string) ?? null;
+}: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const resolvedSearchParams = await searchParams;
+  const store = (resolvedSearchParams.store as string) ?? null;
   const profile = await getProfileByStoreParam(store);
 
   if (!profile) {
