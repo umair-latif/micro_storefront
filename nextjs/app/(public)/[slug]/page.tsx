@@ -25,6 +25,7 @@ import ProductViews from "@/components/storefront/ProductViews";
 import CategoryListView from "@/components/storefront/CategoryListView";
 import CategorySlider from "@/components/storefront/CategorySlider";
 import StorefrontHeader from "@/components/storefront/StorefrontHeader";
+import { normalizeStorefrontConfig } from "@/lib/storefront-config";
 
 /* ---------------------------------- Types --------------------------------- */
 
@@ -71,23 +72,6 @@ function toBlocks(cfg: StorefrontConfig | null | undefined): LandingBlock[] {
   ];
 }
 
-function legacyFromLayoutPreset(cfg: StorefrontConfig): StorefrontConfig {
-  if (!cfg.layout_preset) return cfg;
-  if (cfg.landing_page || cfg.display_mode) return cfg;
-
-  switch (cfg.layout_preset) {
-    case "business_card":
-      return { ...cfg, landing_page: "hero-only" };
-    case "link_in_bio":
-      return { ...cfg, landing_page: "products", display_mode: "links" };
-    case "collections_first":
-      return { ...cfg, landing_page: "categories", show_categories: true };
-    case "featured_drop":
-    case "product_showcase":
-    default:
-      return { ...cfg, landing_page: "products", display_mode: "grid" };
-  }
-}
 
 /* --------------------------- Metadata (public) ---------------------------- */
 
@@ -160,7 +144,7 @@ export default async function StorefrontPage({
   }
 
   // Normalize legacy keys → StorefrontConfig
-  const cfg: StorefrontConfig = legacyFromLayoutPreset({
+  const cfg: StorefrontConfig = normalizeStorefrontConfig({
     ...cfgObj,
     theme: cfgObj.theme ?? undefined,
     display_mode: cfgObj.display_mode ?? cfgObj.view ?? undefined,
@@ -170,6 +154,7 @@ export default async function StorefrontPage({
 
   // Resolve theme
   const theme = getThemeFromConfig(cfg);
+  const cfgTheme = cfg.theme;
 
   // Build blocks (landing_blocks or legacy fallback)
   const blocks = toBlocks(cfg);
@@ -285,9 +270,9 @@ return (
             const showNav = !!(b as any).show_category_nav;
 
             const navStyle = resolveCategoryNavStyle(
-              cfg.theme?.variant as any,
+              cfgTheme?.variant as any,
               (b as any).category_nav_style ??
-                (cfg as any)?.theme?.defaults?.category_nav_style ??
+                cfgTheme?.defaults?.category_nav_style ??
                 "auto"
             );
 

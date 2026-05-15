@@ -1,40 +1,15 @@
 import { createSupabaseServerClient } from "@/lib/supabase-server"; // your SSR client
-import type { StorefrontConfig } from "@/lib/types";
 import { notFound } from "next/navigation";
 import LandingEditor from "./ui/LandingEditor";
 import StorefrontPresetEditor from "./ui/StorefrontPresetEditor";
-import { DEFAULT_STOREFRONT_CONFIG } from "@/lib/defaults";
-
+import {
+  getLayoutPresetLabel,
+  getStoreTypeLabel,
+  normalizeStorefrontConfig,
+} from "@/lib/storefront-config";
+import { ExternalLink } from "lucide-react";
 
 export const dynamic = "force-dynamic";
-
-function parseConfig(raw: unknown): StorefrontConfig {
-  if (!raw) return DEFAULT_STOREFRONT_CONFIG;
-  const parsed = typeof raw === "string" ? (() => {
-    try {
-      return JSON.parse(raw) as StorefrontConfig;
-    } catch {
-      return {};
-    }
-  })() : raw as StorefrontConfig;
-
-  const rawTheme = parsed.theme;
-  const theme: NonNullable<StorefrontConfig["theme"]> =
-    typeof rawTheme === "string" ? { variant: rawTheme as any } : rawTheme ?? {};
-
-  return {
-    ...DEFAULT_STOREFRONT_CONFIG,
-    ...parsed,
-    theme: {
-      ...(DEFAULT_STOREFRONT_CONFIG.theme ?? {}),
-      ...(theme ?? {}),
-      palette: {
-        ...(DEFAULT_STOREFRONT_CONFIG.theme?.palette ?? {}),
-        ...(theme?.palette ?? {}),
-      },
-    },
-  };
-}
 
 export default async function StorefrontPage({ searchParams }: { searchParams: Promise<{ store?: string }> }) {
   const resolvedSearchParams = await searchParams;
@@ -81,25 +56,29 @@ export default async function StorefrontPage({ searchParams }: { searchParams: P
     );
   }
 
-  const config = parseConfig(profile.storefront_config);
+  const config = normalizeStorefrontConfig(profile.storefront_config);
   const initialBlocks = config.landing_blocks ?? [
-  { type: "hero", show_avatar: true, show_socials: true, show_ctas: true },
-  { type: "products", source: "all", view: "grid_3" as const, show_price: true },
-];
+    { type: "hero", show_avatar: true, show_socials: true, show_ctas: true },
+    { type: "products", source: "all", view: "grid_3" as const, show_price: true },
+  ];
   return (
     <div className="space-y-6">
       <StorefrontPresetEditor
         profileId={profile.id}
         initialConfig={config}
-        publicUrl={`/${profile.slug}`}
       />
 
       <details className="rounded-2xl border border-black/10 bg-white shadow-sm">
         <summary className="cursor-pointer list-none px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-semibold text-neutral-900">Advanced Layout</h2>
-              <p className="mt-1 text-xs text-neutral-500">Fine-tune individual page sections.</p>
+            <div className="flex items-start gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-sm font-semibold text-white">
+                3
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-neutral-900">Customize sections</h2>
+                <p className="mt-1 text-xs text-neutral-500">Fine-tune individual page sections.</p>
+              </div>
             </div>
             <span className="rounded-full border border-black/10 px-3 py-1 text-xs text-neutral-600">
               Optional
@@ -114,6 +93,31 @@ export default async function StorefrontPage({ searchParams }: { searchParams: P
           />
         </div>
       </details>
+
+      <section className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-sm font-semibold text-white">
+              4
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-neutral-900">Preview & publish</h2>
+              <p className="mt-1 text-sm text-neutral-500">
+                {getStoreTypeLabel(config.store_type)} · {getLayoutPresetLabel(config.layout_preset)} · {config.theme?.variant ?? "clean"}
+              </p>
+            </div>
+          </div>
+          <a
+            href={`/${profile.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl border border-black/10 px-3 py-2 text-sm hover:bg-neutral-50"
+          >
+            <ExternalLink className="h-4 w-4" />
+            View store
+          </a>
+        </div>
+      </section>
     </div>
   );
 }

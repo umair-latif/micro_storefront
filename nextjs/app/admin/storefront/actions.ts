@@ -2,6 +2,7 @@
 
 import { createServerSupabase } from "@/lib/supabase-ssr-server";
 import type { StorefrontTheme, LandingBlock, StorefrontConfig, GridMode } from "@/lib/types";
+import { normalizeStorefrontConfig } from "@/lib/storefront-config";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -42,7 +43,7 @@ export async function updateStorefrontConfigAction(
     const { supabase, user, current, error } = await readOwnedProfile(profileId);
     if (error || !user || !current) return { ok: false, error: error ?? "Unable to update storefront." };
 
-    const cfg = parseCfg(current.storefront_config);
+    const cfg = normalizeStorefrontConfig(current.storefront_config);
     const merged: StorefrontConfig = {
       ...cfg,
       ...patch,
