@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import LandingEditor from "./ui/LandingEditor";
 import StorefrontPresetEditor from "./ui/StorefrontPresetEditor";
 import {
+  getStorefrontLandingBlocks,
   getLayoutPresetLabel,
   getStoreTypeLabel,
   normalizeStorefrontConfig,
@@ -57,10 +58,7 @@ export default async function StorefrontPage({ searchParams }: { searchParams: P
   }
 
   const config = normalizeStorefrontConfig(profile.storefront_config);
-  const initialBlocks = config.landing_blocks ?? [
-    { type: "hero", show_avatar: true, show_socials: true, show_ctas: true },
-    { type: "products", source: "all", view: "grid_3" as const, show_price: true },
-  ];
+  const initialBlocks = getStorefrontLandingBlocks(config);
   return (
     <div className="space-y-6">
       <StorefrontPresetEditor

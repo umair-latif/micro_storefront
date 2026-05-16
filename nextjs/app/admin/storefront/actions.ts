@@ -2,18 +2,9 @@
 
 import { createServerSupabase } from "@/lib/supabase-ssr-server";
 import type { StorefrontTheme, LandingBlock, StorefrontConfig, GridMode } from "@/lib/types";
-import { normalizeStorefrontConfig } from "@/lib/storefront-config";
+import { mergeStorefrontConfig, normalizeStorefrontConfig } from "@/lib/storefront-config";
 
 type Result = { ok: true } | { ok: false; error: string };
-
-// --- tiny helper: safely parse storefront_config if it was stored as a string
-function parseCfg(raw: unknown): StorefrontConfig {
-  if (!raw) return {};
-  if (typeof raw === "string") {
-    try { return JSON.parse(raw) as StorefrontConfig; } catch { return {}; }
-  }
-  return raw as StorefrontConfig;
-}
 
 async function readOwnedProfile(profileId: string) {
   const supabase = await createServerSupabase();
@@ -43,19 +34,7 @@ export async function updateStorefrontConfigAction(
     const { supabase, user, current, error } = await readOwnedProfile(profileId);
     if (error || !user || !current) return { ok: false, error: error ?? "Unable to update storefront." };
 
-    const cfg = normalizeStorefrontConfig(current.storefront_config);
-    const merged: StorefrontConfig = {
-      ...cfg,
-      ...patch,
-      theme: {
-        ...(typeof cfg.theme === "string" ? { variant: cfg.theme as any } : cfg.theme ?? {}),
-        ...(typeof patch.theme === "string" ? { variant: patch.theme as any } : patch.theme ?? {}),
-        palette: {
-          ...((typeof cfg.theme === "string" ? {} : cfg.theme?.palette) ?? {}),
-          ...((typeof patch.theme === "string" ? {} : patch.theme?.palette) ?? {}),
-        },
-      },
-    };
+    const merged = mergeStorefrontConfig(current.storefront_config, patch);
 
     const { error: writeErr } = await supabase
       .from("profiles")
@@ -92,8 +71,7 @@ export async function updateThemeAction(profileId: string, nextTheme: Storefront
       return { ok: false, error: "You do not have permission to update this store." };
     }
 
-    const cfg = parseCfg(current.storefront_config);
-    const merged: StorefrontConfig = { ...cfg, theme: nextTheme };
+    const merged = mergeStorefrontConfig(current.storefront_config, { theme: nextTheme });
 
     const { error: writeErr } = await supabase
       .from("profiles")
@@ -126,8 +104,7 @@ export async function updateLandingBlocks(profileId: string, blocks: LandingBloc
   if (!current) return { ok: false, error: "Profile not found." };
   if (current.owner_uid !== user.id) return { ok: false, error: "Forbidden." };
 
-  const cfg = parseCfg(current.storefront_config);
-  const merged: StorefrontConfig = { ...cfg, landing_blocks: blocks };
+  const merged = mergeStorefrontConfig(current.storefront_config, { landing_blocks: blocks });
 
   const { error: writeErr } = await supabase
     .from("profiles")
@@ -162,16 +139,14 @@ export async function updateLandingOverridesAction(
     if (!current) return { ok: false, error: "Profile not found." };
     if (current.owner_uid !== user.id) return { ok: false, error: "Forbidden." };
 
-    const cfg = parseCfg(current.storefront_config);
-
-    const merged: StorefrontConfig = {
-      ...cfg,
+    const cfg = normalizeStorefrontConfig(current.storefront_config);
+    const merged = mergeStorefrontConfig(cfg, {
       landing_overrides: {
         ...(cfg.landing_overrides ?? {}),
         // undefined clears the override; defined sets it
         category_page_view: payload.category_page_view,
       },
-    };
+    });
 
     const { error: writeErr } = await supabase
       .from("profiles")
@@ -205,16 +180,13 @@ export async function updateTopSection(
     if (!current) return { ok: false, error: "Profile not found." };
     if (current.owner_uid !== user.id) return { ok: false, error: "Forbidden." };
 
-    const raw = current.storefront_config ?? {};
-    const cfg = typeof raw === "string" ? (JSON.parse(raw) || {}) : raw;
-
-    const merged = {
-      ...cfg,
+    const cfg = normalizeStorefrontConfig(current.storefront_config);
+    const merged = mergeStorefrontConfig(cfg, {
       top_section: {
         ...(cfg.top_section ?? {}),
         ...top,
       },
-    };
+    });
 
     const { error: writeErr } = await supabase
       .from("profiles")

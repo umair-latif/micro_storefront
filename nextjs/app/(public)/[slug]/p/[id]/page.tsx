@@ -6,6 +6,7 @@ import type { Metadata, ResolvingMetadata } from "next";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { getThemeFromConfig } from "@/lib/theme";
+import { normalizeStorefrontConfig } from "@/lib/storefront-config";
 import type { StorefrontConfig } from "@/lib/types";
 import CTAButtons from "@/components/storefront/CTAButtons";
 import ProductGallery from "@/components/storefront/ProductGallery";
@@ -81,7 +82,7 @@ export default async function ProductPage({
 
   if (!prod) return notFound();
 
-  const cfg = (p.storefront_config ?? {}) as StorefrontConfig;
+  const cfg = normalizeStorefrontConfig(p.storefront_config) as StorefrontConfig;
   const theme = getThemeFromConfig(cfg);
   const backHref = catParam ? `/${p.slug}/c/${encodeURIComponent(catParam)}` : `/${p.slug}`;
   const pageBgStyle =

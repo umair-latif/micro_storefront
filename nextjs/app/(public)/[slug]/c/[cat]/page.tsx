@@ -12,6 +12,7 @@ import {
   getThemeFromConfig,
 } from "@/lib/theme";
 import { type Category, type Product, type StorefrontConfig } from "@/lib/types";
+import { normalizeStorefrontConfig } from "@/lib/storefront-config";
 import CategorySlider from "@/components/storefront/CategorySlider";
 import ProductViews from "@/components/storefront/ProductViews";
 import StoreIdentityBar from "@/components/storefront/StoreIdentityBar";
@@ -51,17 +52,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
 
   if (!p) notFound();
 
-  const rawCfg = (p as any).storefront_config ?? {};
-  const cfg: StorefrontConfig =
-    typeof rawCfg === "string"
-      ? (() => {
-          try {
-            return JSON.parse(rawCfg);
-          } catch {
-            return {};
-          }
-        })()
-      : rawCfg;
+  const cfg: StorefrontConfig = normalizeStorefrontConfig((p as any).storefront_config);
   const theme = getThemeFromConfig(cfg);
 
   // Collections use the categories table internally.
