@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { CheckCircle2, Loader2, TriangleAlert } from "lucide-react";
+import React from "react";
+import { CheckCircle2 } from "lucide-react";
 import type {
   LayoutPreset,
   StorefrontConfig,
@@ -10,7 +10,6 @@ import type {
 } from "@/lib/types";
 import {
   applyPresetToConfig,
-  layoutPresetPatch,
   LAYOUT_PRESET_OPTIONS,
   mergeStorefrontConfig,
   normalizeStorefrontConfig,
@@ -18,53 +17,25 @@ import {
   STORE_TYPE_OPTIONS,
   THEME_VARIANT_OPTIONS,
 } from "@/lib/storefront-config";
-import { updateStorefrontConfigAction } from "../actions";
-
-function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, ms: number) {
-  const ref = useRef<number | null>(null);
-  return (...args: Parameters<T>) => {
-    if (ref.current) window.clearTimeout(ref.current);
-    ref.current = window.setTimeout(() => fn(...args), ms);
-  };
-}
 
 export default function StorefrontPresetEditor({
-  profileId,
-  initialConfig,
+  config,
+  onConfigChange,
 }: {
-  profileId: string;
-  initialConfig?: StorefrontConfig | null;
+  config: StorefrontConfig;
+  onConfigChange: (next: StorefrontConfig) => void;
 }) {
-  const [config, setConfig] = useState<StorefrontConfig>(() => normalizeStorefrontConfig(initialConfig));
-  const [saving, startSaving] = useTransition();
-  const [savedTick, setSavedTick] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-
-  const theme = config.theme ?? {};
+  const normalizedConfig = normalizeStorefrontConfig(config);
+  const theme = normalizedConfig.theme ?? {};
   const variant = (theme.variant ?? "clean") as ThemeVariant;
   const paletteOptions = PALETTE_PRESETS[variant] ?? PALETTE_PRESETS.clean;
 
-  const persist = useDebouncedCallback((patch: StorefrontConfig) => {
-    startSaving(async () => {
-      setError(null);
-      const res = await updateStorefrontConfigAction(profileId, patch);
-      if (!res.ok) {
-        setError("error" in res ? res.error : "Failed to save storefront.");
-        return;
-      }
-      setSavedTick(Date.now());
-    });
-  }, 250);
-
   function update(patch: StorefrontConfig) {
-    const next = mergeStorefrontConfig(config, patch);
-    setConfig(next);
-    persist(patch);
+    onConfigChange(mergeStorefrontConfig(normalizedConfig, patch));
   }
 
   function applyLayoutPreset(preset: LayoutPreset) {
-    setConfig(applyPresetToConfig(config, preset));
-    persist(layoutPresetPatch(preset));
+    onConfigChange(applyPresetToConfig(normalizedConfig, preset));
   }
 
   function setThemeVariant(nextVariant: ThemeVariant) {
@@ -80,12 +51,6 @@ export default function StorefrontPresetEditor({
     });
   }
 
-  useEffect(() => {
-    if (!savedTick) return;
-    const timer = window.setTimeout(() => setSavedTick(0), 1000);
-    return () => window.clearTimeout(timer);
-  }, [savedTick]);
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 shadow-sm">
@@ -93,22 +58,8 @@ export default function StorefrontPresetEditor({
           <h2 className="text-base font-semibold text-neutral-900">Storefront setup</h2>
           <p className="mt-1 text-sm text-neutral-500">Choose the closest starting point. You can customize sections after the basics feel right.</p>
         </div>
-        <div className="inline-flex h-5 items-center gap-2 text-xs">
-          {saving ? (
-            <span className="inline-flex items-center gap-1 text-neutral-600">
-              <Loader2 className="h-4 w-4 animate-spin" /> Saving...
-            </span>
-          ) : null}
-          {!saving && savedTick > 0 ? (
-            <span className="inline-flex items-center gap-1 text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" /> Saved
-            </span>
-          ) : null}
-          {error ? (
-            <span className="inline-flex items-center gap-1 text-amber-700">
-              <TriangleAlert className="h-4 w-4" /> {error}
-            </span>
-          ) : null}
+        <div className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600">
+          Draft mode
         </div>
       </div>
 
@@ -120,7 +71,7 @@ export default function StorefrontPresetEditor({
         <div className="space-y-5">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
             {LAYOUT_PRESET_OPTIONS.map((option) => {
-              const active = option.value === config.layout_preset;
+              const active = option.value === normalizedConfig.layout_preset;
               return (
                 <PresetCard
                   key={option.value}
@@ -139,12 +90,12 @@ export default function StorefrontPresetEditor({
             <summary className="cursor-pointer list-none text-sm font-medium text-neutral-700">
               Business type
               <span className="ml-2 text-xs font-normal text-neutral-500">
-                {STORE_TYPE_OPTIONS.find((option) => option.value === config.store_type)?.label}
+                {STORE_TYPE_OPTIONS.find((option) => option.value === normalizedConfig.store_type)?.label}
               </span>
             </summary>
             <div className="mt-3 flex flex-wrap gap-2">
               {STORE_TYPE_OPTIONS.map((option) => {
-                const active = option.value === config.store_type;
+                const active = option.value === normalizedConfig.store_type;
                 return (
                   <button
                     key={option.value}

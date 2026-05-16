@@ -13,7 +13,7 @@ async function readOwnedProfile(profileId: string) {
 
   const { data: current, error } = await supabase
     .from("profiles")
-    .select("id, owner_uid, storefront_config")
+    .select("id, owner_uid, storefront_config, storefront_config_draft")
     .eq("id", profileId)
     .maybeSingle();
 
@@ -26,6 +26,78 @@ async function readOwnedProfile(profileId: string) {
   return { supabase, user, current, error: null };
 }
 
+export async function saveStorefrontDraftAction(
+  profileId: string,
+  nextConfig: StorefrontConfig
+): Promise<Result> {
+  try {
+    const { supabase, user, current, error } = await readOwnedProfile(profileId);
+    if (error || !user || !current) return { ok: false, error: error ?? "Unable to save draft." };
+
+    const draft = normalizeStorefrontConfig(nextConfig);
+    const { error: writeErr } = await supabase
+      .from("profiles")
+      .update({
+        storefront_config_draft: draft,
+        storefront_draft_updated_at: new Date().toISOString(),
+      })
+      .eq("id", profileId)
+      .eq("owner_uid", user.id);
+
+    if (writeErr) return { ok: false, error: writeErr.message };
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? "Unknown error" };
+  }
+}
+
+export async function publishStorefrontDraftAction(profileId: string): Promise<Result> {
+  try {
+    const { supabase, user, current, error } = await readOwnedProfile(profileId);
+    if (error || !user || !current) return { ok: false, error: error ?? "Unable to publish storefront." };
+
+    const draft = normalizeStorefrontConfig(current.storefront_config_draft ?? current.storefront_config);
+    const now = new Date().toISOString();
+    const { error: writeErr } = await supabase
+      .from("profiles")
+      .update({
+        storefront_config: draft,
+        storefront_config_draft: draft,
+        storefront_published_at: now,
+        storefront_draft_updated_at: now,
+      })
+      .eq("id", profileId)
+      .eq("owner_uid", user.id);
+
+    if (writeErr) return { ok: false, error: writeErr.message };
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? "Unknown error" };
+  }
+}
+
+export async function restorePublishedStorefrontAction(profileId: string): Promise<Result> {
+  try {
+    const { supabase, user, current, error } = await readOwnedProfile(profileId);
+    if (error || !user || !current) return { ok: false, error: error ?? "Unable to restore published storefront." };
+
+    const published = normalizeStorefrontConfig(current.storefront_config);
+    const { error: writeErr } = await supabase
+      .from("profiles")
+      .update({
+        storefront_config_draft: published,
+        storefront_draft_updated_at: new Date().toISOString(),
+      })
+      .eq("id", profileId)
+      .eq("owner_uid", user.id);
+
+    if (writeErr) return { ok: false, error: writeErr.message };
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? "Unknown error" };
+  }
+}
+
 export async function updateStorefrontConfigAction(
   profileId: string,
   patch: StorefrontConfig
@@ -34,11 +106,14 @@ export async function updateStorefrontConfigAction(
     const { supabase, user, current, error } = await readOwnedProfile(profileId);
     if (error || !user || !current) return { ok: false, error: error ?? "Unable to update storefront." };
 
-    const merged = mergeStorefrontConfig(current.storefront_config, patch);
+    const merged = mergeStorefrontConfig(current.storefront_config_draft ?? current.storefront_config, patch);
 
     const { error: writeErr } = await supabase
       .from("profiles")
-      .update({ storefront_config: merged })
+      .update({
+        storefront_config_draft: merged,
+        storefront_draft_updated_at: new Date().toISOString(),
+      })
       .eq("id", profileId)
       .eq("owner_uid", user.id);
 
@@ -61,7 +136,7 @@ export async function updateThemeAction(profileId: string, nextTheme: Storefront
 
     const { data: current, error: readErr } = await supabase
       .from("profiles")
-      .select("id, owner_uid, storefront_config")
+      .select("id, owner_uid, storefront_config, storefront_config_draft")
       .eq("id", profileId)
       .maybeSingle();
 
@@ -71,11 +146,14 @@ export async function updateThemeAction(profileId: string, nextTheme: Storefront
       return { ok: false, error: "You do not have permission to update this store." };
     }
 
-    const merged = mergeStorefrontConfig(current.storefront_config, { theme: nextTheme });
+    const merged = mergeStorefrontConfig(current.storefront_config_draft ?? current.storefront_config, { theme: nextTheme });
 
     const { error: writeErr } = await supabase
       .from("profiles")
-      .update({ storefront_config: merged })
+      .update({
+        storefront_config_draft: merged,
+        storefront_draft_updated_at: new Date().toISOString(),
+      })
       .eq("id", profileId)
       .eq("owner_uid", user.id);
 
@@ -96,7 +174,7 @@ export async function updateLandingBlocks(profileId: string, blocks: LandingBloc
 
   const { data: current, error: readErr } = await supabase
     .from("profiles")
-    .select("id, owner_uid, storefront_config")
+    .select("id, owner_uid, storefront_config, storefront_config_draft")
     .eq("id", profileId)
     .maybeSingle();
 
@@ -104,11 +182,14 @@ export async function updateLandingBlocks(profileId: string, blocks: LandingBloc
   if (!current) return { ok: false, error: "Profile not found." };
   if (current.owner_uid !== user.id) return { ok: false, error: "Forbidden." };
 
-  const merged = mergeStorefrontConfig(current.storefront_config, { landing_blocks: blocks });
+  const merged = mergeStorefrontConfig(current.storefront_config_draft ?? current.storefront_config, { landing_blocks: blocks });
 
   const { error: writeErr } = await supabase
     .from("profiles")
-    .update({ storefront_config: merged })
+    .update({
+      storefront_config_draft: merged,
+      storefront_draft_updated_at: new Date().toISOString(),
+    })
     .eq("id", profileId)
     .eq("owner_uid", user.id);
 
@@ -131,7 +212,7 @@ export async function updateLandingOverridesAction(
 
     const { data: current, error: readErr } = await supabase
       .from("profiles")
-      .select("id, owner_uid, storefront_config")
+      .select("id, owner_uid, storefront_config, storefront_config_draft")
       .eq("id", profileId)
       .maybeSingle();
 
@@ -139,7 +220,7 @@ export async function updateLandingOverridesAction(
     if (!current) return { ok: false, error: "Profile not found." };
     if (current.owner_uid !== user.id) return { ok: false, error: "Forbidden." };
 
-    const cfg = normalizeStorefrontConfig(current.storefront_config);
+    const cfg = normalizeStorefrontConfig(current.storefront_config_draft ?? current.storefront_config);
     const merged = mergeStorefrontConfig(cfg, {
       landing_overrides: {
         ...(cfg.landing_overrides ?? {}),
@@ -150,7 +231,10 @@ export async function updateLandingOverridesAction(
 
     const { error: writeErr } = await supabase
       .from("profiles")
-      .update({ storefront_config: merged })
+      .update({
+        storefront_config_draft: merged,
+        storefront_draft_updated_at: new Date().toISOString(),
+      })
       .eq("id", profileId)
       .eq("owner_uid", user.id);
 
@@ -172,7 +256,7 @@ export async function updateTopSection(
 
     const { data: current, error: readErr } = await supabase
       .from("profiles")
-      .select("id, owner_uid, storefront_config")
+      .select("id, owner_uid, storefront_config, storefront_config_draft")
       .eq("id", profileId)
       .maybeSingle();
 
@@ -180,7 +264,7 @@ export async function updateTopSection(
     if (!current) return { ok: false, error: "Profile not found." };
     if (current.owner_uid !== user.id) return { ok: false, error: "Forbidden." };
 
-    const cfg = normalizeStorefrontConfig(current.storefront_config);
+    const cfg = normalizeStorefrontConfig(current.storefront_config_draft ?? current.storefront_config);
     const merged = mergeStorefrontConfig(cfg, {
       top_section: {
         ...(cfg.top_section ?? {}),
@@ -190,7 +274,10 @@ export async function updateTopSection(
 
     const { error: writeErr } = await supabase
       .from("profiles")
-      .update({ storefront_config: merged })
+      .update({
+        storefront_config_draft: merged,
+        storefront_draft_updated_at: new Date().toISOString(),
+      })
       .eq("id", profileId)
       .eq("owner_uid", user.id);
 
