@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { CheckCircle2, Loader2, RotateCcw, Send, Save, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Eye, Loader2, RotateCcw, Send, Save, TriangleAlert } from "lucide-react";
 import type { LandingBlock, StorefrontConfig } from "@/lib/types";
 import {
   getStorefrontLandingBlocks,
@@ -109,6 +109,33 @@ export default function StorefrontDraftBuilder({
     });
   }
 
+  function previewDraft() {
+    const previewWindow = window.open("", "_blank", "noopener,noreferrer");
+    startTransition(async () => {
+      setError(null);
+      setMessage(null);
+      const nextDraft = normalizeStorefrontConfig(draft);
+      if (hasUnsavedDraftEdits || !draftExists) {
+        const saveResult = await saveStorefrontDraftAction(profileId, nextDraft);
+        if (!saveResult.ok) {
+          if (previewWindow) previewWindow.close();
+          setError("error" in saveResult ? saveResult.error : "Could not save draft preview.");
+          return;
+        }
+        setSavedDraft(nextDraft);
+        setDraftExists(true);
+        setLastDraftSave(new Date().toISOString());
+      }
+      const previewUrl = `/admin/storefront/preview?store=${encodeURIComponent(profileId)}`;
+      if (previewWindow) {
+        previewWindow.location.href = previewUrl;
+      } else {
+        window.open(previewUrl, "_blank", "noopener,noreferrer");
+      }
+      setMessage("Draft preview opened");
+    });
+  }
+
   function publishDraft() {
     startTransition(async () => {
       setError(null);
@@ -193,7 +220,15 @@ export default function StorefrontDraftBuilder({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:flex lg:shrink-0">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:flex xl:shrink-0">
+            <button
+              type="button"
+              onClick={previewDraft}
+              disabled={pending}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-black/10 px-3 py-2 text-sm font-medium hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Eye className="h-4 w-4" /> Preview Draft
+            </button>
             <button
               type="button"
               onClick={saveDraft}
@@ -260,7 +295,7 @@ export default function StorefrontDraftBuilder({
             <div>
               <h2 className="text-base font-semibold text-neutral-900">Preview & publish</h2>
               <p className="mt-1 text-sm text-neutral-500">
-                Preview opens the currently published storefront.
+                Open the published storefront visitors currently see.
               </p>
             </div>
           </div>
