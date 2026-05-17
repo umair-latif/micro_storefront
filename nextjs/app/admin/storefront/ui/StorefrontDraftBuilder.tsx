@@ -37,6 +37,15 @@ function isSameConfig(a: StorefrontConfig, b: StorefrontConfig) {
   return stableStringify(normalizeStorefrontConfig(a)) === stableStringify(normalizeStorefrontConfig(b));
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export default function StorefrontDraftBuilder({
   profileId,
   slug,
@@ -110,7 +119,16 @@ export default function StorefrontDraftBuilder({
   }
 
   function previewDraft() {
-    const previewWindow = window.open("", "_blank", "noopener,noreferrer");
+    const previewWindow = window.open("about:blank", "_blank");
+    if (previewWindow) {
+      previewWindow.opener = null;
+      previewWindow.document.title = "Opening draft preview...";
+      previewWindow.document.body.innerHTML = `
+        <main style="font-family: system-ui, sans-serif; padding: 32px; color: #171717;">
+          <p style="font-size: 14px; color: #525252;">Opening your draft preview...</p>
+        </main>
+      `;
+    }
     startTransition(async () => {
       setError(null);
       setMessage(null);
@@ -118,8 +136,19 @@ export default function StorefrontDraftBuilder({
       if (hasUnsavedDraftEdits || !draftExists) {
         const saveResult = await saveStorefrontDraftAction(profileId, nextDraft);
         if (!saveResult.ok) {
-          if (previewWindow) previewWindow.close();
-          setError("error" in saveResult ? saveResult.error : "Could not save draft preview.");
+          const message = "error" in saveResult ? saveResult.error : "Could not save draft preview.";
+          if (previewWindow) {
+            previewWindow.document.title = "Draft preview unavailable";
+            previewWindow.document.body.innerHTML = `
+              <main style="font-family: system-ui, sans-serif; max-width: 560px; padding: 32px; color: #171717;">
+                <h1 style="font-size: 20px; margin: 0 0 8px;">Draft preview unavailable</h1>
+                <p style="font-size: 14px; line-height: 1.5; color: #525252;">
+                  ${escapeHtml(message)}
+                </p>
+              </main>
+            `;
+          }
+          setError(message);
           return;
         }
         setSavedDraft(nextDraft);
