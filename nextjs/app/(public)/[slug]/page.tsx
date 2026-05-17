@@ -18,13 +18,13 @@ import {
   type Product,
   type Category,
   type SocialsConfig,
-  type LandingBlock,
   type GridMode,
 } from "@/lib/types";
 import ProductViews from "@/components/storefront/ProductViews";
 import CategoryListView from "@/components/storefront/CategoryListView";
 import CategorySlider from "@/components/storefront/CategorySlider";
 import StorefrontHeader from "@/components/storefront/StorefrontHeader";
+import { getStorefrontLandingBlocks, normalizeStorefrontConfig } from "@/lib/storefront-config";
 
 /* ---------------------------------- Types --------------------------------- */
 
@@ -42,27 +42,6 @@ type Profile = {
 
 function getTitle(p: Profile) {
   return p.display_name || "Profile";
-}
-
-/* ----------------------- Legacy → Blocks Fallback ------------------------- */
-
-function toBlocks(cfg: StorefrontConfig | null | undefined): LandingBlock[] {
-  const c = cfg ?? {};
-  if (Array.isArray((c as any).landing_blocks) && (c as any).landing_blocks.length > 0) {
-    return (c as any).landing_blocks as LandingBlock[];
-  }
-
-  // Legacy fields → sensible default blocks
-  const hero: LandingBlock = { type: "hero", show_avatar: true, show_socials: true, show_ctas: true };
-  const legacyLanding = (c.landing_page as any) ?? "products";
-
-  if (legacyLanding === "hero-only") return [hero];
-
-  // default products
-  return [
-    hero,
-    { type: "products", source: "all", view: ((c.display_mode as GridMode) ?? "grid_3"), show_price: true },
-  ];
 }
 
 /* --------------------------- Metadata (public) ---------------------------- */
@@ -123,32 +102,14 @@ export default async function StorefrontPage({
 
   const p = pFull as unknown as Profile;
 
-  // Parse storefront_config (string or object)
-  const rawCfg = (p as any).storefront_config ?? {};
-  let cfgObj: any = rawCfg;
-  if (typeof rawCfg === "string") {
-    try {
-      cfgObj = JSON.parse(rawCfg);
-    } catch {
-      console.warn("[Storefront] storefront_config is a string but not valid JSON:", rawCfg);
-      cfgObj = {};
-    }
-  }
-
-  // Normalize legacy keys → StorefrontConfig
-  const cfg: StorefrontConfig = {
-    ...cfgObj,
-    theme: cfgObj.theme ?? undefined,
-    display_mode: cfgObj.display_mode ?? cfgObj.view ?? undefined,
-    show_categories: cfgObj.show_categories ?? cfgObj.showCategories ?? undefined,
-    landing_page: (cfgObj.landing_page ?? cfgObj.landingPage ?? cfgObj.landing) ?? undefined,
-  };
+  const cfg: StorefrontConfig = normalizeStorefrontConfig(p.storefront_config);
 
   // Resolve theme
   const theme = getThemeFromConfig(cfg);
+  const cfgTheme = cfg.theme;
 
   // Build blocks (landing_blocks or legacy fallback)
-  const blocks = toBlocks(cfg);
+  const blocks = getStorefrontLandingBlocks(cfg);
 
   // Fetch categories for blocks that need them
   const { data: categories = [] } = await supabase
@@ -261,9 +222,9 @@ return (
             const showNav = !!(b as any).show_category_nav;
 
             const navStyle = resolveCategoryNavStyle(
-              cfg.theme?.variant as any,
+              cfgTheme?.variant as any,
               (b as any).category_nav_style ??
-                (cfg as any)?.theme?.defaults?.category_nav_style ??
+                cfgTheme?.defaults?.category_nav_style ??
                 "auto"
             );
 

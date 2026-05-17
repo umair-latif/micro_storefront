@@ -31,8 +31,8 @@ export default function CategoriesManager({ profileId }: { profileId: string }) 
       .order("position", { ascending: true });
 
     if (error) {
-      console.error("Load categories error:", error);
-      setErrorMsg(error.message ?? "Failed to load categories.");
+      console.error("Load collections error:", error);
+      setErrorMsg(error.message ?? "Failed to load collections.");
       setItems([]);
     } else {
       setItems((data ?? []) as Category[]);
@@ -61,13 +61,13 @@ export default function CategoriesManager({ profileId }: { profileId: string }) 
       )}
 
       <div className="flex items-center justify-between">
-        <div className="text-sm text-neutral-600">Manage your categories</div>
+        <div className="text-sm text-neutral-600">Manage your collections</div>
         <button
           onClick={() => setShowCreate((s) => !s)}
           className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm hover:bg-neutral-50"
         >
           <Plus className="h-4 w-4" />
-          New category
+          New collection
         </button>
       </div>
 
@@ -89,7 +89,7 @@ export default function CategoriesManager({ profileId }: { profileId: string }) 
           <Loader2 className="h-4 w-4 animate-spin" /> Loading…
         </div>
       ) : items.length === 0 ? (
-        <div className="text-sm text-neutral-600">No categories yet.</div>
+        <div className="text-sm text-neutral-600">No collections yet.</div>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((c) => (

@@ -14,9 +14,9 @@ export default async function CategoriesPage({
   if (!profile) {
     return (
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold">Categories</h1>
+        <h1 className="text-xl font-semibold">Collections</h1>
         <p className="text-sm text-neutral-600">
-          Select a store from the top bar to manage categories.
+          Select a store from the top bar to manage collections.
         </p>
       </div>
     );
@@ -25,7 +25,7 @@ export default async function CategoriesPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Categories</h1>
+        <h1 className="text-xl font-semibold">Collections</h1>
         <p className="text-sm text-neutral-600">/{profile.slug}</p>
       </div>
       <CategoriesManager profileId={profile.id} />

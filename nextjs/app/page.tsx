@@ -57,7 +57,7 @@ export default function MarketingHome() {
         {/* Subcopy */}
         <p className="mt-1 text-balance text-neutral-600 sm:text-lg">
           Microw lets creators and small shops showcase products, links, and
-          CTAs in a clean, themeable page. Add categories, Instagram-style
+          CTAs in a clean, themeable page. Add collections, Instagram-style
           product cards, and one-tap WhatsApp.
         </p>
 

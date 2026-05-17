@@ -6,7 +6,6 @@ import Link from "next/link";
 import { type Product } from "@/lib/types";
 import SfButton from "@/components/storefront/SfButton";
 import ReactMarkdown from "react-markdown";
-import { SpanStatus } from "next/dist/trace";
 
 
 // Extended type for internal card variant
@@ -45,17 +44,6 @@ export default function ProductCard({
   const wa = waHref(whatsapp);
   const hasWhatsapp = Boolean(wa);
   const borderColor = theme?.muted ?? "#fff";
-  // --- Dynamic Click Logic ---
-  const hasCaption = Boolean(product.caption);
-  // If product has a caption, link to the product page.
-  // If no caption, link directly to Instagram permalink (if available), otherwise product page.
-  const mainLinkHref = hasCaption ? productPageHref : product.instagram_permalink || productPageHref;
-  const WrapperTag = hasCaption || !product.instagram_permalink ? Link : "a";
-  const wrapperProps =
-    hasCaption || !product.instagram_permalink
-      ? { href: mainLinkHref }
-      : { href: mainLinkHref, target: "_blank", rel: "noopener noreferrer" };
-
   // Determine card base styling
   const isList = variant === "list";
   const isIgGrid = variant === "grid-ig";       // Grid 3: Image-only
@@ -75,14 +63,11 @@ export default function ProductCard({
   // Determine image aspect ratio
   const imageAspect = isLargeGrid ? "aspect-[4/3]" : "aspect-square";
 
-  // For Instagram grid, we wrap the image in the main clickable tag (WrapperTag)
-  const MediaWrapper = isIgGrid ? WrapperTag : Link;
-
   return (
     <CardWrap>
       {/* Media */}
-      <MediaWrapper
-        {...wrapperProps}
+      <Link
+        href={productPageHref}
         className={isList ? "h-24 w-24 shrink-0" : "block"}
       >
         <div
@@ -104,13 +89,13 @@ export default function ProductCard({
             <div className="h-full w-full bg-neutral-100" />
           )}
         </div>
-      </MediaWrapper>
+      </Link>
 
       {/* body - Hidden for Instagram style grid (grid_3) */}
       {!isIgGrid && (
         <div className={isList ? "flex-1" : "p-3"}>
           {/* Title and Caption */}
-          <WrapperTag {...wrapperProps} className="block">
+          <Link href={productPageHref} className="block">
             <div
               className={`line-clamp-1 text-sm font-medium ${isLargeGrid ? "text-center" : ""}`}
               style={{ color: theme.text }}
@@ -123,7 +108,7 @@ export default function ProductCard({
                 <ReactMarkdown>{product.caption}</ReactMarkdown>
               </span>
             ) : null}
-          </WrapperTag>
+          </Link>
 
           {/* price + custom CTA (internal to product) */}
           <div className={`mt-2 flex flex-wrap items-center ${isLargeGrid ? "justify-center" : "gap-2"}`}>
@@ -155,34 +140,6 @@ export default function ProductCard({
           {/* --- Full-Width CTA Buttons Section --- */}
           {(hasWhatsapp || hasInstagram || hasProductCustomCta) && (
             <div className="mt-3 grid grid-cols-1 gap-2">
-              {hasWhatsapp ? (
-                <SfButton
-                  href={wa!}
-                  theme={theme}
-                  size="md"
-                  fullWidth
-                  colorSource="accent" // WA stands out on accent
-                  btnTone="solid"
-                >
-                  WhatsApp
-                </SfButton>
-              ) : null}
-
-              {hasInstagram ? (
-                <SfButton
-                  href={product.instagram_permalink!}
-                  theme={theme}
-                  size="md"
-                  fullWidth
-                  btnTone="outline"    // outline looks good for external links
-                  // NOTE: If your SfButton supports target/rel, you can add them here:
-                  // target="_blank" rel="noopener noreferrer"
-                >
-                  Instagram
-                </SfButton>
-              ) : null}
-
-              {/* Keep parity with previous behavior: show custom CTA here as well */}
               {hasProductCustomCta ? (
                 <SfButton
                   href={product.cta_url!}
@@ -193,6 +150,30 @@ export default function ProductCard({
                   btnTone="solid"
                 >
                   {product.cta_label}
+                </SfButton>
+              ) : null}
+
+              {hasInstagram ? (
+                <SfButton
+                  href={product.instagram_permalink!}
+                  theme={theme}
+                  size="md"
+                  fullWidth
+                  btnTone="outline"
+                >
+                  Instagram
+                </SfButton>
+              ) : null}
+
+              {hasWhatsapp ? (
+                <SfButton
+                  href={wa!}
+                  theme={theme}
+                  size="md"
+                  fullWidth
+                  btnTone="outline"
+                >
+                  WhatsApp
                 </SfButton>
               ) : null}
             </div>

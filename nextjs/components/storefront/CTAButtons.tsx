@@ -1,17 +1,16 @@
-// components/storefront/CTAButtons.tsx
 "use client";
 
 import SfButton from "@/components/storefront/SfButton";
 import {
-  getDefaultButtonStyle,
   getDefaultButtonShadow,
+  getDefaultButtonStyle,
   getDefaultButtonTone,
 } from "@/lib/theme";
 import type {
-  StorefrontConfig,
-  ButtonStyle,
   ButtonShadow,
+  ButtonStyle,
   ButtonTone,
+  StorefrontConfig,
 } from "@/lib/types";
 
 export default function CTAButtons({
@@ -37,52 +36,46 @@ export default function CTAButtons({
   btnStyle?: ButtonStyle;
   btnShadow?: ButtonShadow;
   btnTone?: ButtonTone;
-  themeVariant?: "clean" | "bold" | "minimal"; // NEW fallback hint
+  themeVariant?: "clean" | "bold" | "minimal";
   className?: string;
   hoverStyle?: React.CSSProperties;
 }) {
-  // 1️⃣ collect CTA items
   const items: { label: string; href: string; key: string }[] = [];
+
+  if (customUrl && customLabel?.trim()) {
+    items.push({ label: customLabel, href: customUrl, key: "custom" });
+  }
+  if (instagramUrl) {
+    items.push({ label: "View on Instagram", href: instagramUrl, key: "ig" });
+  }
   if (whatsapp) {
     const href = `https://wa.me/${whatsapp.replace(/[^\d]/g, "")}`;
     items.push({ label: "Contact via WhatsApp", href, key: "wa" });
   }
-  if (instagramUrl) {
-    items.push({ label: "Open in Instagram", href: instagramUrl, key: "ig" });
-  }
-  if (customUrl && customLabel?.trim()) {
-    items.push({ label: customLabel, href: customUrl, key: "custom" });
-  }
 
   if (!items.length) return null;
 
-  // 2️⃣ Resolve theme defaults — safe fallback if cfg missing
   const resolvedStyle =
     btnStyle ??
     (cfg ? getDefaultButtonStyle(cfg) : themeVariant === "bold" ? "pills" : themeVariant === "minimal" ? "square" : "rounded");
 
-  const resolvedShadow =
-    btnShadow ??
-    (cfg ? getDefaultButtonShadow(cfg) : "soft");
+  const resolvedShadow = btnShadow ?? (cfg ? getDefaultButtonShadow(cfg) : "soft");
 
-  const resolvedTone =
-    btnTone ??
-    (cfg ? getDefaultButtonTone(cfg) : themeVariant === "bold" ? "solid" : "soft");
+  const resolvedTone = btnTone ?? (cfg ? getDefaultButtonTone(cfg) : themeVariant === "bold" ? "solid" : "soft");
 
-  // 3️⃣ Render buttons
   return (
-    <div className="flex flex-wrap gap-2 justify-center">
-      {items.map((it) => (
+    <div className="flex flex-wrap justify-center gap-2">
+      {items.map((it, index) => (
         <SfButton
           key={it.key}
           href={it.href}
           size="md"
           btnStyle={resolvedStyle}
           btnShadow={resolvedShadow}
-          btnTone={resolvedTone}
+          btnTone={index === 0 ? resolvedTone : "outline"}
           className={className}
           style={{
-            backgroundColor: resolvedTone === "solid" ? accent : undefined,
+            backgroundColor: index === 0 && resolvedTone === "solid" ? accent : undefined,
             ...(hoverStyle ?? {}),
           }}
         >

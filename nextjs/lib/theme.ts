@@ -147,7 +147,9 @@ export function getDefaultProductView(cfg: StorefrontConfig | null | undefined):
 /* -------------------------- Theme Resolution --------------------------- */
 
 export function getThemeFromConfig(cfg: StorefrontConfig): ResolvedTheme {
-  const theme: StorefrontTheme | undefined = cfg.theme;
+  const rawTheme = cfg.theme;
+  const theme: StorefrontTheme | undefined =
+    typeof rawTheme === "string" ? { variant: rawTheme as StorefrontTheme["variant"] } : rawTheme;
   const variant = theme?.variant ?? "clean";
   const preset  = theme?.palette?.preset ?? "default";
 

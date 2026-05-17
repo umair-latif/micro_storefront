@@ -1,9 +1,7 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server"; // your SSR client
-import ThemeEditor from "./ui/ThemeEditor";
-import type { StorefrontTheme } from "@/lib/types";
 import { notFound } from "next/navigation";
-import LandingEditor from "./ui/LandingEditor";
-
+import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { normalizeStorefrontConfig } from "@/lib/storefront-config";
+import StorefrontDraftBuilder from "./ui/StorefrontDraftBuilder";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +9,7 @@ export default async function StorefrontPage({ searchParams }: { searchParams: P
   const resolvedSearchParams = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    // Middleware should redirect, but be safe
-    notFound();
-  }
+  if (!user) notFound();
 
   const store = (resolvedSearchParams.store ?? "").trim();
   if (!store) {
@@ -26,13 +21,30 @@ export default async function StorefrontPage({ searchParams }: { searchParams: P
     );
   }
 
-  // fetch the profile by id or slug BUT owned by current user
-  const { data: profile, error } = await supabase
+  let { data: profile, error } = await supabase
     .from("profiles")
-    .select("id, owner_uid, storefront_config")
+    .select("id, slug, owner_uid, storefront_config, storefront_config_draft, storefront_published_at, storefront_draft_updated_at")
     .or(`id.eq.${store},slug.eq.${store}`)
     .eq("owner_uid", user.id)
     .maybeSingle();
+
+  if (error && error.message.includes("storefront_config_draft")) {
+    const fallback = await supabase
+      .from("profiles")
+      .select("id, slug, owner_uid, storefront_config")
+      .or(`id.eq.${store},slug.eq.${store}`)
+      .eq("owner_uid", user.id)
+      .maybeSingle();
+    profile = fallback.data
+      ? {
+          ...fallback.data,
+          storefront_config_draft: null,
+          storefront_published_at: null,
+          storefront_draft_updated_at: null,
+        }
+      : null;
+    error = fallback.error;
+  }
 
   if (error) {
     return (
@@ -47,24 +59,23 @@ export default async function StorefrontPage({ searchParams }: { searchParams: P
     return (
       <div className="space-y-2">
         <h1 className="text-xl font-semibold">Storefront</h1>
-        <p className="text-sm text-red-600">Store “{store}” not found, or you don’t have permission.</p>
+        <p className="text-sm text-red-600">Store not found, or you do not have permission.</p>
       </div>
     );
   }
 
-  const initialTheme: StorefrontTheme | undefined = profile.storefront_config?.theme;
-  const initialBlocks = profile.storefront_config?.landing_blocks ?? [
-  { type: "hero", show_avatar: true, show_socials: true, show_ctas: true },
-  { type: "categories", show: !!profile.storefront_config?.show_categories, style: "chips" },
-  { type: "products", source: "all", view: "grid_3" as const, show_price: true },
-];
+  const publishedConfig = normalizeStorefrontConfig(profile.storefront_config);
+  const draftConfig = normalizeStorefrontConfig(profile.storefront_config_draft ?? profile.storefront_config);
+
   return (
-    <div className="space-y-6">
-       <LandingEditor
+    <StorefrontDraftBuilder
       profileId={profile.id}
-      initialBlocks={initialBlocks}
+      slug={profile.slug}
+      initialDraftConfig={draftConfig}
+      publishedConfig={publishedConfig}
+      hasStoredDraft={!!profile.storefront_config_draft}
+      publishedAt={profile.storefront_published_at}
+      draftUpdatedAt={profile.storefront_draft_updated_at}
     />
-      <ThemeEditor profileId={profile.id} initialTheme={initialTheme} />
-    </div>
   );
 }

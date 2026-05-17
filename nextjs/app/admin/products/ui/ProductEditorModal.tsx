@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase-client";
-import { X, Loader2, Upload, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Upload, X } from "lucide-react";
 import MarkdownEditor from "@/components/site/MarkdownEditor";
-
+import { createClient } from "@/lib/supabase-client";
 
 type Product = {
   id: string;
@@ -17,7 +16,7 @@ type Product = {
   cta_label?: string | null;
   cta_url?: string | null;
   category_id?: string | null;
-  visible?: boolean | null; // NEW
+  visible?: boolean | null;
 };
 
 type Category = { id: string; name: string };
@@ -67,7 +66,7 @@ export default function ProductEditorModal({
       cta_label: form.cta_label ?? null,
       cta_url: form.cta_url ?? null,
       category_id: form.category_id ?? null,
-      visible: form.visible ?? true, // NEW
+      visible: form.visible ?? true,
     };
     const { data, error } = await supabase
       .from("products")
@@ -144,20 +143,20 @@ export default function ProductEditorModal({
 
   return (
     <>
-      {/* Overlay */}
       <div className="fixed inset-0 z-[60] bg-black/40" onClick={onClose} />
 
-      {/* Centered container with scrollable panel */}
       <div className="fixed inset-0 z-[61] flex items-start justify-center p-3 sm:p-6">
         <div
           role="dialog"
           aria-modal="true"
-          className="w-full max-w-2xl rounded-2xl bg-white shadow-xl ring-1 ring-black/10"
+          className="w-full max-w-3xl rounded-2xl bg-white shadow-xl ring-1 ring-black/10"
           style={{ maxHeight: "85vh" }}
         >
-          {/* Header (sticky) */}
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-black/10 bg-white/90 px-4 py-3 backdrop-blur">
-            <h3 className="text-base font-semibold">Edit product</h3>
+            <div>
+              <h3 className="text-base font-semibold">Edit product</h3>
+              <p className="text-xs text-neutral-500">Details first, links last.</p>
+            </div>
             <button
               onClick={onClose}
               className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-neutral-50"
@@ -167,11 +166,9 @@ export default function ProductEditorModal({
             </button>
           </div>
 
-          {/* Body (scrollable) */}
-          <div className="px-4 py-4 overflow-y-auto" style={{ maxHeight: "calc(85vh - 104px)" }}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {/* Left: Image + Upload */}
-              <div className="space-y-3">
+          <div className="overflow-y-auto px-4 py-4" style={{ maxHeight: "calc(85vh - 104px)" }}>
+            <div className="grid gap-4 lg:grid-cols-[280px,1fr]">
+              <aside className="space-y-3">
                 <div className="aspect-video w-full overflow-hidden rounded-lg bg-neutral-100">
                   {form.thumb_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -188,7 +185,7 @@ export default function ProductEditorModal({
                     className="hidden"
                     onChange={(e) => {
                       const file = e.currentTarget.files?.[0];
-                      if (file) handleUpload(file);
+                      if (file) void handleUpload(file);
                       e.currentTarget.value = "";
                     }}
                   />
@@ -198,7 +195,7 @@ export default function ProductEditorModal({
                     className="inline-flex items-center gap-2 rounded-xl border border-black/10 px-3 py-2 text-sm hover:bg-neutral-50 disabled:opacity-60"
                   >
                     {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    {uploading ? "Uploading…" : "Upload image"}
+                    {uploading ? "Uploading..." : "Upload image"}
                   </button>
                   <button
                     onClick={handleDeleteImage}
@@ -209,106 +206,101 @@ export default function ProductEditorModal({
                     Delete
                   </button>
                 </div>
-              </div>
+              </aside>
 
-              {/* Right: Fields */}
-              <div className="space-y-3">
-                <label className="block">
-                  <span className="text-sm font-medium">Title</span>
-                  <input
-                    className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-                    value={form.title ?? ""}
-                    onChange={(e) => update("title", e.target.value)}
+              <div className="space-y-4">
+                <section className="space-y-3 rounded-xl border border-black/10 p-3">
+                  <div>
+                    <h4 className="text-sm font-semibold">Product basics</h4>
+                    <p className="text-xs text-neutral-500">Shown in product cards and on the product page.</p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <TextInput label="Title" value={form.title ?? ""} onChange={(v) => update("title", v)} />
+                    <label className="block">
+                      <span className="text-sm font-medium">Price</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
+                        value={form.price ?? ""}
+                        onChange={(e) => update("price", e.currentTarget.value ? Number(e.currentTarget.value) : null)}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm font-medium">Collection</span>
+                      <select
+                        className="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                        value={form.category_id ?? ""}
+                        onChange={(e) => update("category_id", e.target.value || null)}
+                      >
+                        <option value="">None</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="inline-flex items-center gap-2 self-end text-sm">
+                      <input
+                        type="checkbox"
+                        checked={form.visible ?? true}
+                        onChange={(e) => update("visible", e.currentTarget.checked)}
+                        className="h-4 w-4 rounded border-black/20"
+                      />
+                      Visible
+                    </label>
+                  </div>
+                </section>
+
+                <section className="space-y-3 rounded-xl border border-black/10 p-3">
+                  <div>
+                    <h4 className="text-sm font-semibold">Product details</h4>
+                    <p className="text-xs text-neutral-500">Shown above the action buttons on the product page.</p>
+                  </div>
+                  <MarkdownEditor
+                    label="Caption"
+                    value={form.caption ?? ""}
+                    onChange={(md) => update("caption", md)}
+                    placeholder="Materials, sizing, care notes, pickup details..."
+                    rows={5}
                   />
-                </label>
+                </section>
 
-                <label className="block">
-                  <span className="text-sm font-medium">Price</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-                    value={form.price ?? ""}
-                    onChange={(e) => update("price", e.currentTarget.value ? Number(e.currentTarget.value) : null)}
-                  />
-                </label>
-
-                 <div className="sm:col-span-2">
-                          <MarkdownEditor
-                            label="Caption"
-                            value={form.caption ?? ""}
-                            onChange={(md) => update("caption", md)}
-                            placeholder="Caption/text"
-                            rows={4}
-                          />
-                        </div>
-
-                <label className="block">
-                  <span className="text-sm font-medium">Instagram permalink</span>
-                  <input
-                    type="url"
-                    className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-                    value={form.instagram_permalink ?? ""}
-                    onChange={(e) => update("instagram_permalink", e.target.value || null)}
-                    placeholder="https://instagram.com/p/…"
-                  />
-                </label>
-
-                {/* CTA fields */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="text-sm font-medium">CTA label</span>
-                    <input
-                      className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
+                <section className="space-y-3 rounded-xl border border-black/10 p-3">
+                  <div>
+                    <h4 className="text-sm font-semibold">Product links</h4>
+                    <p className="text-xs text-neutral-500">Use one primary action, then optional supporting links.</p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <TextInput
+                      label="Primary action label"
                       value={form.cta_label ?? ""}
-                      onChange={(e) => update("cta_label", e.target.value || null)}
-                      placeholder="Buy now"
+                      onChange={(v) => update("cta_label", v || null)}
+                      placeholder="Buy on Etsy"
                     />
-                  </label>
-                  <label className="block">
-                    <span className="text-sm font-medium">CTA URL</span>
-                    <input
+                    <TextInput
+                      label="Primary action URL"
                       type="url"
-                      className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
                       value={form.cta_url ?? ""}
-                      onChange={(e) => update("cta_url", e.target.value || null)}
-                      placeholder="https://…"
+                      onChange={(v) => update("cta_url", v || null)}
+                      placeholder="https://..."
                     />
-                  </label>
-                </div>
-
-                {/* Category selector */}
-                <label className="block">
-                  <span className="text-sm font-medium">Category</span>
-                  <select
-                    className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm bg-white"
-                    value={form.category_id ?? ""}
-                    onChange={(e) => update("category_id", e.target.value || null)}
-                  >
-                    <option value="">— None —</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {/* Visible toggle */}
-                <label className="inline-flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={form.visible ?? true}
-                    onChange={(e) => update("visible", e.currentTarget.checked)}
-                    className="h-4 w-4 rounded border-black/20"
-                  />
-                  Visible
-                </label>
+                    <div className="sm:col-span-2">
+                      <TextInput
+                        label="Instagram post or reel"
+                        type="url"
+                        value={form.instagram_permalink ?? ""}
+                        onChange={(v) => update("instagram_permalink", v || null)}
+                        placeholder="https://instagram.com/p/..."
+                      />
+                    </div>
+                  </div>
+                </section>
               </div>
             </div>
           </div>
 
-          {/* Footer (sticky) */}
           <div className="sticky bottom-0 z-10 flex justify-end gap-2 border-t border-black/10 bg-white/90 px-4 py-3 backdrop-blur">
             <button
               onClick={onClose}
@@ -328,5 +320,32 @@ export default function ProductEditorModal({
         </div>
       </div>
     </>
+  );
+}
+
+function TextInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-medium">{label}</span>
+      <input
+        type={type}
+        className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
   );
 }

@@ -76,8 +76,8 @@ export default function CategoryCovers({ profileId }: { profileId: string }) {
     }
   }
 
-  if (loading) return <div className="text-sm text-neutral-600">Loading categories…</div>;
-  if (!cats.length) return <div className="text-sm text-neutral-600">No categories yet.</div>;
+  if (loading) return <div className="text-sm text-neutral-600">Loading collections...</div>;
+  if (!cats.length) return <div className="text-sm text-neutral-600">No collections yet.</div>;
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
